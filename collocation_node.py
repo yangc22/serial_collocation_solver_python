@@ -21,27 +21,27 @@ class collocation_node:
         self.m = m
         self.delta_t = []
         self.tspan = []
-        self.y = np.zeros((1, size_y), dtype = np.float64)
-        self.z = np.zeros((1, size_z), dtype = np.float64)
+        self.y = np.zeros((size_y), dtype = np.float64)
+        self.z = np.zeros((size_z), dtype = np.float64)
         self.y_Dot = np.zeros((m, size_y), dtype = np.float64)
         self.z_Tileda = np.zeros((m, size_z), dtype = np.float64)
-        self.p = np.zeros((1, size_p), dtype = np.float64)
+        self.p = np.zeros((size_p), dtype = np.float64)
 
     '''
-        Input: y - a size_y x 1 vector of the value of the ODE variables
+        Input: y - a size_y vector of the value of the ODE variables
         Set the ODE variable y.
     '''
     def set_y(self, y):
         for i in range(self.size_y):
-            self.y[0，i] = y[0，i]
+            self.y[i] = y[i]
 
     '''
-        Input: z - a size_z x 1 vector of the value of the DAE variables
+        Input: z - a size_z vector of the value of the DAE variables
         Set the DAE variable z.
     '''
     def set_z(self, z):
         for i in range(self.size_z):
-            self.z[0, i] = z[0, i]
+            self.z[i] = z[i]
 
     '''
         Input: p - a size_p x 1 vector of the value of the parameter variables
@@ -49,7 +49,7 @@ class collocation_node:
     '''
     def set_p(self, p):
         for i in range(self.size_p):
-            self.p[0, i] = p[0, i]
+            self.p[i] = p[i]
 
     '''
         Input: delta_t - a double representing the interval of the time 

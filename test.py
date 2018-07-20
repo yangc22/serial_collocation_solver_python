@@ -3,14 +3,12 @@ from collocation_node import *
 import ocp
 
 n = collocation_node(4,4,1,3);
-y = np.zeros((1,4))
-z = np.ones((1,4))
+y = np.zeros((4))
+z = np.ones((4))
 pp = [1]
 p = np.asarray(pp)
 print(p)
-for i in range(4):
-    print(y[0, i])
-'''
+
 n.set_y(y)
 n.set_z(z)
 n.set_p(p)
@@ -19,7 +17,7 @@ y[0] = 10
 z[0] = 10
 p[0] = 10
 print(n.y, n.z, n.p)
-
+'''
 nodes = []
 n1 = collocation_node(4, 4, 1, 1)
 n2 = collocation_node(4, 4, 1, 1)
