@@ -17,6 +17,9 @@ y[0] = 10
 z[0] = 10
 p[0] = 10
 print(n.y, n.z, n.p)
+
+lo = lobatto(4)
+print(lo.A)
 '''
 nodes = []
 n1 = collocation_node(4, 4, 1, 1)
