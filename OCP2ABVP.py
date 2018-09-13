@@ -397,14 +397,14 @@ class OCP(object):
             abvp_header += '\t}\n'
             abvp_header += '}\n'
         
-        print abvp_header
-        print abvp_f
-        print abvp_g
-        print abvp_r
-        print abvp_Df
-        print abvp_Dg
-        print abvp_Dr
-        print abvp_main
+        print (abvp_header)
+        print (abvp_f)
+        print (abvp_g)
+        print (abvp_r)
+        print (abvp_Df)
+        print (abvp_Dg)
+        print (abvp_Dr)
+        print (abvp_main)
 
 def _make_variables_py0(line, typ):
     rline = ''
@@ -450,8 +450,8 @@ def _make_constants_py0(line):
             i += 1
             k += 1
     except:
-        print 'Syntax error on line: ', _raw_line_number_
-        print 'Exception: ', sys.exc_type, sys.exc_value
+        print ('Syntax error on line: ', _raw_line_number_)
+        print ('Exception: ', sys.exc_type, sys.exc_value)
         raise SyntaxError
 
     return rline
@@ -567,9 +567,9 @@ def _ocp_translate(inpt, typ):
     t = '%s\n%s' % (r, s)
 
     exec(t)
-    print '/*\n'
-    print _raw_lines_
-    print '*/\n'
+    print ('/*\n')
+    print (_raw_lines_)
+    print ('*/\n')
 
 if __name__ == '__main__':
     """
@@ -626,7 +626,7 @@ if __name__ == '__main__':
     try:
         ocp = sys.argv[1]
     except:
-        print 'Unable to read input file'
-        print 'Exception: ', sys.exc_type, sys.exc_value
+        print ('Unable to read input file')
+        print ('Exception: ', sys.exc_type, sys.exc_value)
 
     _ocp_translate(ocp, 0)
