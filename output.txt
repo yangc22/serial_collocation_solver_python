@@ -1,0 +1,177 @@
+// Created by OCP.py
+#include <stdio.h>
+#include <float.h>
+#include <math.h>
+#include <stdlib.h>
+#include "runtime.h"
+#include "vector.h"
+#include "matrix.h"
+#include "lu.h"
+#include "qr.h"
+#include "abd.h"
+#include "equations.h"
+#include "newtonsmethod.h"
+#include "abvpdae.h"
+#include "mshootdae.h"
+
+double _rho_ = 1.0e3;
+
+double _mu_ = 1.0e-1;
+
+
+void _abvp_f(Vector _y, Vector _z, Vector _p, Vector _f) {
+	double x1 = _y->e[0];
+	double x2 = _y->e[1];
+	double _lambda1 = _y->e[2];
+	double _lambda2 = _y->e[3];
+	double u1 = _z->e[0];
+	_f->e[0] = x2;
+	_f->e[1] = u1;
+	_f->e[2] = 0;
+	_f->e[3] = -_lambda1;
+}
+
+void _abvp_g(Vector _y, Vector _z, Vector _p, Vector _g) {
+	double x1 = _y->e[0];
+	double x2 = _y->e[1];
+	double _lambda1 = _y->e[2];
+	double _lambda2 = _y->e[3];
+	double u1 = _z->e[0];
+	_g->e[0] = _lambda2 + 1.0*u1;
+}
+
+void _abvp_r(Vector _y0, Vector _y1, Vector _p, Vector _r) {
+	double _kappa_i1 = _p->e[0];
+	double _kappa_i2 = _p->e[1];
+	double _kappa_f1 = _p->e[2];
+	double _kappa_f2 = _p->e[3];
+	double x1 = _y0->e[0];
+	double x2 = _y0->e[1];
+	double _lambda1 = _y0->e[2];
+	double _lambda2 = _y0->e[3];
+	// initial conditions
+	_r->e[0] = x1 - 1.0;
+	_r->e[1] = x2 - 1.0;
+	_r->e[2] = _kappa_i1 + _lambda1;
+	_r->e[3] = _kappa_i2 + _lambda2;
+	// final conditions
+	x1 = _y1->e[0];
+	x2 = _y1->e[1];
+	_lambda1 = _y1->e[2];
+	_lambda2 = _y1->e[3];
+	_r->e[4] = x1;
+	_r->e[5] = x2;
+	_r->e[6] = -_kappa_f1 + _lambda1;
+	_r->e[7] = -_kappa_f2 + _lambda2;
+}
+
+void _abvp_Df(Vector _y, Vector _z, Vector _p, Matrix _Df) {
+	double x1 = _y->e[0];
+	double x2 = _y->e[1];
+	double _lambda1 = _y->e[2];
+	double _lambda2 = _y->e[3];
+	double u1 = _z->e[0];
+	_Df->e[0][1] = 1;
+	_Df->e[1][4] = 1;
+	_Df->e[3][2] = -1;
+}
+
+void _abvp_Dg(Vector _y, Vector _z, Vector _p, Matrix _Dg) {
+	double x1 = _y->e[0];
+	double x2 = _y->e[1];
+	double _lambda1 = _y->e[2];
+	double _lambda2 = _y->e[3];
+	double u1 = _z->e[0];
+	_Dg->e[0][3] = 1;
+	_Dg->e[0][4] = 1.00000000000000;
+}
+
+void _abvp_Dr(Vector _y0, Vector _y1, Vector _p, Matrix _Dr) {
+	double _kappa_i1 = _p->e[0];
+	double _kappa_i2 = _p->e[1];
+	double _kappa_f1 = _p->e[2];
+	double _kappa_f2 = _p->e[3];
+	double x1 = _y0->e[0];
+	double x2 = _y0->e[1];
+	double _lambda1 = _y0->e[2];
+	double _lambda2 = _y0->e[3];
+	// initial conditions
+	_Dr->e[0][0] = 1;
+	_Dr->e[1][1] = 1;
+	_Dr->e[2][2] = 1;
+	_Dr->e[2][8] = 1;
+	_Dr->e[3][3] = 1;
+	_Dr->e[3][9] = 1;
+	// final conditions
+	x1 = _y1->e[0];
+	x2 = _y1->e[1];
+	_lambda1 = _y1->e[2];
+	_lambda2 = _y1->e[3];
+	_Dr->e[4][4] = 1;
+	_Dr->e[5][5] = 1;
+	_Dr->e[6][6] = 1;
+	_Dr->e[6][10] = -1;
+	_Dr->e[7][7] = 1;
+	_Dr->e[7][11] = -1;
+}
+
+int main() {
+	int _ny = 4;
+	int _nz = 1;
+	int _np = 4;
+	int _ninequality = 0;
+	ABVPDAE _bvp = ABVPDAENew(_ny, _nz, _np, _ninequality);
+	_bvp->f = _abvp_f;
+	_bvp->g = _abvp_g;
+	_bvp->r = _abvp_r;
+	_bvp->Df = _abvp_Df;
+	_bvp->Dg = _abvp_Dg;
+	_bvp->Dr = _abvp_Dr;
+	MSHOOTDAE _m = MSHOOTDAENew();
+	_m->bvp = _bvp;
+	_m->tolerance = 1e-06;
+	_m->maximum_nodes = 1000;
+	_m->maximum_newton_iterations = 200;
+	_m->maximum_mesh_refinements = 10;
+	_m->display = 1;
+	int _N = 101;
+	double _t_initial = 0;
+	double _t_final = 1;
+	Vector _T0 = VectorLinspace(_t_initial, _t_final, _N);
+	Matrix _Y0 = MatrixNew(_N, _ny);
+	Matrix _Z0 = MatrixNew(_N, _nz);
+	Vector _P0 = VectorNew(_np);
+	MatrixSetAllTo(_Y0, 1.0);
+	MatrixSetAllTo(_Z0, 1.0);
+	VectorSetAllTo(_P0, 1.0);
+	int _err = MSHOOTDAESolve(_m, _T0, _Y0, _Z0, _P0);
+	printf("MSHOOTDAESolve exit code: %d\n", _err);
+	_err = MSHOOTDAEWriteData(_m, "ex2.data");
+	ABVPDAEDelete(_bvp);
+	MSHOOTDAEDelete(_m);
+	VectorDelete(_T0);
+	MatrixDelete(_Y0);
+	MatrixDelete(_Z0);
+	VectorDelete(_P0);
+	return _err;
+}
+
+/*
+
+# Sage, A. P. and White, C. C., Optimum Systems Control,
+# Prentice-Hall, 1977.
+
+StateVariables 			= [x1, x2];
+ControlVariables 		= [u1];
+InitialConstraints 		= [x1 - 1.0, x2 - 1.0];
+TerminalConstraints 	= [x1, x2];
+CostFunctional 			= u1*u1*0.5;
+#TerminalPenalty         = x1*x1;
+DifferentialEquations 	= [x2, u1];
+Nodes					= 101;
+Tolerance				= 1.0e-6;
+OutputFile				= "ex2.data";
+Display					= YES;
+
+*/
+
