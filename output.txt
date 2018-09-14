@@ -18,17 +18,36 @@ double _rho_ = 1.0e3;
 
 double _mu_ = 1.0e-1;
 
+double rho =1.0e-3;
+void _solution_estimate(Vector _T, Matrix _Y, Matrix _Z, Vector _P) {
+	int i;
+	double t;
+	for (i = 0; i < _T->r; i++) {
+		t = _T->e[i];
+		_Y->e[i][0] = t;
+		_Y->e[i][1] = t*(-t + 1);
+		_Z->e[i][0] = 2;
+	}
+	if (_P != NULL) {
+		for (i = 0; i < _P->r; i++) {
+		}
+	}
+}
 
 void _abvp_f(Vector _y, Vector _z, Vector _p, Vector _f) {
 	double x1 = _y->e[0];
 	double x2 = _y->e[1];
 	double _lambda1 = _y->e[2];
 	double _lambda2 = _y->e[3];
-	double u1 = _z->e[0];
+	double u = _z->e[0];
+	double _mu1 = _z->e[1];
+	double _mu2 = _z->e[2];
+	double _nu1 = _z->e[3];
+	double _nu2 = _z->e[4];
 	_f->e[0] = x2;
-	_f->e[1] = u1;
+	_f->e[1] = u;
 	_f->e[2] = 0;
-	_f->e[3] = -_lambda1;
+	_f->e[3] = -_lambda1 + 1;
 }
 
 void _abvp_g(Vector _y, Vector _z, Vector _p, Vector _g) {
@@ -36,22 +55,29 @@ void _abvp_g(Vector _y, Vector _z, Vector _p, Vector _g) {
 	double x2 = _y->e[1];
 	double _lambda1 = _y->e[2];
 	double _lambda2 = _y->e[3];
-	double u1 = _z->e[0];
-	_g->e[0] = _lambda2 + 1.0*u1;
+	double u = _z->e[0];
+	double _mu1 = _z->e[1];
+	double _mu2 = _z->e[2];
+	double _nu1 = _z->e[3];
+	double _nu2 = _z->e[4];
+	_g->e[0] = _lambda2 + _mu1 - _mu2;
+	_g->e[1] = _nu1 + u - 1.0;
+	_g->e[2] = _nu2 - u - 1.0;
+	_g->e[3] = _mu1*_nu1;
+	_g->e[4] = _mu2*_nu2;
 }
 
 void _abvp_r(Vector _y0, Vector _y1, Vector _p, Vector _r) {
 	double _kappa_i1 = _p->e[0];
 	double _kappa_i2 = _p->e[1];
 	double _kappa_f1 = _p->e[2];
-	double _kappa_f2 = _p->e[3];
 	double x1 = _y0->e[0];
 	double x2 = _y0->e[1];
 	double _lambda1 = _y0->e[2];
 	double _lambda2 = _y0->e[3];
 	// initial conditions
-	_r->e[0] = x1 - 1.0;
-	_r->e[1] = x2 - 1.0;
+	_r->e[0] = x1;
+	_r->e[1] = x2;
 	_r->e[2] = _kappa_i1 + _lambda1;
 	_r->e[3] = _kappa_i2 + _lambda2;
 	// final conditions
@@ -59,10 +85,9 @@ void _abvp_r(Vector _y0, Vector _y1, Vector _p, Vector _r) {
 	x2 = _y1->e[1];
 	_lambda1 = _y1->e[2];
 	_lambda2 = _y1->e[3];
-	_r->e[4] = x1;
-	_r->e[5] = x2;
-	_r->e[6] = -_kappa_f1 + _lambda1;
-	_r->e[7] = -_kappa_f2 + _lambda2;
+	_r->e[4] = x2;
+	_r->e[5] = _lambda1;
+	_r->e[6] = -_kappa_f1 + _lambda2;
 }
 
 void _abvp_Df(Vector _y, Vector _z, Vector _p, Matrix _Df) {
@@ -70,7 +95,11 @@ void _abvp_Df(Vector _y, Vector _z, Vector _p, Matrix _Df) {
 	double x2 = _y->e[1];
 	double _lambda1 = _y->e[2];
 	double _lambda2 = _y->e[3];
-	double u1 = _z->e[0];
+	double u = _z->e[0];
+	double _mu1 = _z->e[1];
+	double _mu2 = _z->e[2];
+	double _nu1 = _z->e[3];
+	double _nu2 = _z->e[4];
 	_Df->e[0][1] = 1;
 	_Df->e[1][4] = 1;
 	_Df->e[3][2] = -1;
@@ -81,16 +110,28 @@ void _abvp_Dg(Vector _y, Vector _z, Vector _p, Matrix _Dg) {
 	double x2 = _y->e[1];
 	double _lambda1 = _y->e[2];
 	double _lambda2 = _y->e[3];
-	double u1 = _z->e[0];
+	double u = _z->e[0];
+	double _mu1 = _z->e[1];
+	double _mu2 = _z->e[2];
+	double _nu1 = _z->e[3];
+	double _nu2 = _z->e[4];
 	_Dg->e[0][3] = 1;
-	_Dg->e[0][4] = 1.00000000000000;
+	_Dg->e[0][5] = 1;
+	_Dg->e[0][6] = -1;
+	_Dg->e[1][4] = 1;
+	_Dg->e[1][7] = 1;
+	_Dg->e[2][4] = -1;
+	_Dg->e[2][8] = 1;
+	_Dg->e[3][5] = _nu1;
+	_Dg->e[3][7] = _mu1;
+	_Dg->e[4][6] = _nu2;
+	_Dg->e[4][8] = _mu2;
 }
 
 void _abvp_Dr(Vector _y0, Vector _y1, Vector _p, Matrix _Dr) {
 	double _kappa_i1 = _p->e[0];
 	double _kappa_i2 = _p->e[1];
 	double _kappa_f1 = _p->e[2];
-	double _kappa_f2 = _p->e[3];
 	double x1 = _y0->e[0];
 	double x2 = _y0->e[1];
 	double _lambda1 = _y0->e[2];
@@ -107,19 +148,17 @@ void _abvp_Dr(Vector _y0, Vector _y1, Vector _p, Matrix _Dr) {
 	x2 = _y1->e[1];
 	_lambda1 = _y1->e[2];
 	_lambda2 = _y1->e[3];
-	_Dr->e[4][4] = 1;
-	_Dr->e[5][5] = 1;
-	_Dr->e[6][6] = 1;
+	_Dr->e[4][5] = 1;
+	_Dr->e[5][6] = 1;
+	_Dr->e[6][7] = 1;
 	_Dr->e[6][10] = -1;
-	_Dr->e[7][7] = 1;
-	_Dr->e[7][11] = -1;
 }
 
 int main() {
 	int _ny = 4;
-	int _nz = 1;
-	int _np = 4;
-	int _ninequality = 0;
+	int _nz = 5;
+	int _np = 3;
+	int _ninequality = 2;
 	ABVPDAE _bvp = ABVPDAENew(_ny, _nz, _np, _ninequality);
 	_bvp->f = _abvp_f;
 	_bvp->g = _abvp_g;
@@ -132,8 +171,8 @@ int main() {
 	_m->tolerance = 1e-06;
 	_m->maximum_nodes = 1000;
 	_m->maximum_newton_iterations = 200;
-	_m->maximum_mesh_refinements = 10;
-	_m->display = 1;
+	_m->maximum_mesh_refinements = 20;
+	_m->display = 0;
 	int _N = 101;
 	double _t_initial = 0;
 	double _t_final = 1;
@@ -144,9 +183,10 @@ int main() {
 	MatrixSetAllTo(_Y0, 1.0);
 	MatrixSetAllTo(_Z0, 1.0);
 	VectorSetAllTo(_P0, 1.0);
+	_solution_estimate(_T0, _Y0, _Z0, _P0);
 	int _err = MSHOOTDAESolve(_m, _T0, _Y0, _Z0, _P0);
 	printf("MSHOOTDAESolve exit code: %d\n", _err);
-	_err = MSHOOTDAEWriteData(_m, "ex2.data");
+	_err = MSHOOTDAEWriteData(_m, "ex4.data");
 	ABVPDAEDelete(_bvp);
 	MSHOOTDAEDelete(_m);
 	VectorDelete(_T0);
@@ -158,20 +198,26 @@ int main() {
 
 /*
 
-# Sage, A. P. and White, C. C., Optimum Systems Control,
-# Prentice-Hall, 1977.
+# Zhao, Y., Bryson, A. E. and Slattery, R.,
+# Generalized gradient algorithm for trajectory optimization,
+# AIAA Journal of Guidance, Control and Dynamics, Vol.  13, pp. 1166--1169, 1990.
 
-StateVariables 			= [x1, x2];
-ControlVariables 		= [u1];
-InitialConstraints 		= [x1 - 1.0, x2 - 1.0];
-TerminalConstraints 	= [x1, x2];
-CostFunctional 			= u1*u1*0.5;
-#TerminalPenalty         = x1*x1;
-DifferentialEquations 	= [x2, u1];
-Nodes					= 101;
-Tolerance				= 1.0e-6;
-OutputFile				= "ex2.data";
-Display					= YES;
+Constants               = [rho = 1.0e-3];
+StateVariables          = [x1, x2];
+ControlVariables        = [u];
+InitialConstraints      = [x1, x2];
+TerminalConstraints     = [x2];
+CostFunctional          = -x2; # + 0.5*rho*u*u;
+DifferentialEquations   = [x2, u];
+InequalityConstraints   = [u - 1.0, -1.0 - u];
+Nodes                   = 101;
+Tolerance               = 1.0e-6;
+StateEstimate           = [t, t*(1-t)];
+ControlEstimate         = [2];
+OutputFile              = "ex4.data";
+Display                 = NO;
+MaximumNodes            = 1000;
+MaximumMeshRefinements  = 20;
 
 */
 

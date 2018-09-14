@@ -106,7 +106,8 @@ class OCP(object):
             g[nu+i] = diff(H, z[nu+i]) # =  o.c[i]
         for i in range(nd):
             g[nu+nc+i] = diff(H, z[nu+nc+i]) + z[nu+nc+nd+i] # = o.d[i] + z[nu+nc+nd+i]
-            g[nu+nc+nd+i] = z[nu+nc+i]*z[nu+nc+nd+i]
+            # g[nu+nc+nd+i] = z[nu+nc+i]*z[nu+nc+nd+i]
+            g[nu+nc+nd+i] = z[nu+nc+i] + z[nu+nc+nd+i] - sqrt(z[nu+nc+i]**2 + z[nu+nc+nd+i]**2) 
         
         # form the boundary conditions : r
         #
@@ -531,11 +532,12 @@ def _ocp_translate(inpt, typ):
     fid = open(inpt, 'r')
     s = ''
     rawline = ''
+    # raw lines from the input file
     _raw_lines_ = ''
     while 1:
         line = fid.readline()
         _raw_lines_ += line
-        #print _raw_lines_
+        # print (_raw_lines_)
         _raw_line_number_ += 1
         if not line:
             break
@@ -565,7 +567,20 @@ def _ocp_translate(inpt, typ):
     r += '_o = OCP()\n'
     s += '_o.make_abvp()\n'
     t = '%s\n%s' % (r, s)
-
+    '''
+    print('r:')
+    print(r)
+    print('r done.')
+    print('s:')
+    print(s)
+    print('s done.')
+    print('t')
+    print(t)
+    print('t done')
+    print('Raw lines:')
+    print(_raw_lines_)
+    print('raw lines done!')
+    '''
     exec(t)
     print ('/*\n')
     print (_raw_lines_)

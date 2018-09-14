@@ -1,0 +1,20 @@
+# Zhao, Y., Bryson, A. E. and Slattery, R.,
+# Generalized gradient algorithm for trajectory optimization,
+# AIAA Journal of Guidance, Control and Dynamics, Vol.  13, pp. 1166--1169, 1990.
+
+Constants               = [rho = 1.0e-3];
+StateVariables          = [x1, x2];
+ControlVariables        = [u];
+InitialConstraints      = [x1, x2];
+TerminalConstraints     = [x2];
+CostFunctional          = -x2; # + 0.5*rho*u*u;
+DifferentialEquations   = [x2, u];
+InequalityConstraints   = [u - 1.0, -1.0 - u];
+Nodes                   = 101;
+Tolerance               = 1.0e-6;
+StateEstimate           = [t, t*(1-t)];
+ControlEstimate         = [2];
+OutputFile              = "ex4.data";
+Display                 = NO;
+MaximumNodes            = 1000;
+MaximumMeshRefinements  = 20;
