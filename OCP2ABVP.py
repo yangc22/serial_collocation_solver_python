@@ -37,11 +37,21 @@ class OCP(object):
         self.parameter_estimate = None
 
     def make_abvp(self):
+        '''
+            Define the variables for OCP problem.
+            y : ODE variables, [x lambda gamma]
+            z : DAE variables, [u theta mu nu]
+                theta : variables for equality constraints
+                mu : lagrange multipliers for inequality constraints
+                nu : slack variables for inequality constraints
+            alpha : continuation parameter
+        '''
+
         o = self
         
         # y = [x, lambda, gamma]
-        nx = len(o.x)
-        np = len(o.p)
+        nx = len(o.x) # number of state variables
+        np = len(o.p) # number of paraters
         y = [0] * (2*nx + np)
         for i in range(nx):
             y[i] = o.x[i]
@@ -50,9 +60,9 @@ class OCP(object):
             y[2*nx+i] = Symbol('_gamma%d' % (i+1))
         
         # z = [u, theta, mu, nu]
-        nu = len(o.u)
-        nc = len(o.c)
-        nd = len(o.d)
+        nu = len(o.u) # number of control varaibles
+        nc = len(o.c) # number of equality constraints
+        nd = len(o.d) # number of inequality constraints
         z = [0] * (nu + nc + 2*nd)
         for i in range(nu):
             z[i] = o.u[i]
@@ -63,8 +73,8 @@ class OCP(object):
             z[nu+nc+nd+i] = Symbol('_nu%d' % (i+1))
         
         # p = [p, nu_i, nu_f]
-        ngamma = len(o.Gamma)
-        npsi = len(o.Psi)
+        ngamma = len(o.Gamma) # number of initial constraints
+        npsi = len(o.Psi) # number of final constraints
         p = [0] * (np + ngamma + npsi)
         for i in range(np):
             p[i] = o.p[i]
@@ -72,7 +82,10 @@ class OCP(object):
             p[np+i] = Symbol('_kappa_i%d' % (i+1))
         for i in range(npsi):
             p[np+ngamma+i] = Symbol('_kappa_f%d' % (i+1))
-            
+
+        # alpha : continuation parameter
+        _alpha = Symbol('_alpha')
+
         # form the Hamiltonian
         H = self.L
         for i in range(len(o.x)):
@@ -107,7 +120,7 @@ class OCP(object):
         for i in range(nd):
             g[nu+nc+i] = diff(H, z[nu+nc+i]) + z[nu+nc+nd+i] # = o.d[i] + z[nu+nc+nd+i]
             # g[nu+nc+nd+i] = z[nu+nc+i]*z[nu+nc+nd+i]
-            g[nu+nc+nd+i] = z[nu+nc+i] + z[nu+nc+nd+i] - sqrt(z[nu+nc+i]**2 + z[nu+nc+nd+i]**2) 
+            g[nu+nc+nd+i] = z[nu+nc+i] + z[nu+nc+nd+i] - sqrt(z[nu+nc+i]**2 + z[nu+nc+nd+i]**2 + 2 * _alpha) 
         
         # form the boundary conditions : r
         #
@@ -149,52 +162,74 @@ class OCP(object):
 
     def write_abvp_c_code(self, y, z, p, f, g, ri, rf, n_ineq):
         o = self
+        '''
+            construct a BVP_DAE class
+        '''
+        # header, import necessary packages and class header
+        bvp_dae_header = ''
+        bvp_dae_header += 'from math import *\n\n'
+        bvp_dae_header += 'class bvp_dae:\n'
+
+        # constant values defined in the OCP file
+        constants = ''
+        if o.constants:
+            for i in range(len(o.constants)):
+                constants += '\t\t{0} {1}\n'.format(o.constants[i], o.constants_value[i])
+        
         # f(y,z,p)
         fg_vars = ''
         for i in range(len(y)):
-            fg_vars += '\tdouble {0} = _y->e[{1}];\n'.format(y[i], i)
+            fg_vars += '\t\t{0} = _y[{1}]\n'.format(y[i], i)
         for i in range(len(z)):
-            fg_vars += '\tdouble {0} = _z->e[{1}];\n'.format(z[i], i)
+            fg_vars += '\t\t{0} = _z[{1}]\n'.format(z[i], i)
         for i in range(len(o.p)):
-            fg_vars += '\tdouble {0} = _p->e[{1}];\n'.format(o.p[i], i)
+            fg_vars += '\t\t{0} = _p[{1}]\n'.format(o.p[i], i)
             
-        abvp_f = 'void _abvp_f(Vector _y, Vector _z, Vector _p, Vector _f) {\n'
+        abvp_f = '\tdef _abvp_f(self, _y, _z, _p, _f):\n'
+        if o.constants:
+            abvp_f += constants
         abvp_f += fg_vars
         for i in range(len(f)):
-            abvp_f += '\t_f->e[{0}] = {1};\n'.format(i, ccode(f[i]))
-        abvp_f += '}\n'
+            abvp_f += '\t\t_f[{0}] = {1}\n'.format(i, ccode(f[i]))
+        abvp_f += '\n'
 
         # g(y,z,p)
-        abvp_g = 'void _abvp_g(Vector _y, Vector _z, Vector _p, Vector _g) {\n'
+        abvp_g = '\tdef _abvp_g(self, _y, _z, _p, _alpha, _g):\n'
+        if o.constants:
+            abvp_g += constants
         abvp_g += fg_vars
         for i in range(len(g)):
-            abvp_g += '\t_g->e[{0}] = {1};\n'.format(i, ccode(g[i]))
-        abvp_g += '}\n'
+            abvp_g += '\t\t_g[{0}] = {1}\n'.format(i, ccode(g[i]))
+        abvp_g += '\n'
         
         # r(y0, y1, p)
         ri_vars = ''
         for i in range(len(p)):
-            ri_vars += '\tdouble {0} = _p->e[{1}];\n'.format(p[i], i)
+            ri_vars += '\t\t{0} = _p[{1}]\n'.format(p[i], i)
         for i in range(len(y)):
-            ri_vars += '\tdouble {0} = _y0->e[{1}];\n'.format(y[i], i)
-        abvp_r = 'void _abvp_r(Vector _y0, Vector _y1, Vector _p, Vector _r) {\n'
+            ri_vars += '\t\t{0} = _y0[{1}]\n'.format(y[i], i)
+        abvp_r = '\tdef _abvp_r(self, _y0, _y1, _p, _r):\n'
+        if o.constants:
+            abvp_r += constants
         abvp_r += ri_vars
-        abvp_r += '\t// initial conditions\n'
+        abvp_r += '\t\t# initial conditions\n'
         for i in range(len(ri)):
-            abvp_r += '\t_r->e[{0}] = {1};\n'.format(i, ccode(ri[i]))
+            abvp_r += '\t\t_r[{0}] = {1}\n'.format(i, ccode(ri[i]))
         
         rf_vars = ''
         for i in range(len(y)):
-            rf_vars += '\t{0} = _y1->e[{1}];\n'.format(y[i], i)
+            rf_vars += '\t\t{0} = _y1[{1}]\n'.format(y[i], i)
         nri = len(ri)
-        abvp_r += '\t// final conditions\n'
+        abvp_r += '\t\t# final conditions\n'
         abvp_r += rf_vars
         for i in range(len(rf)):
-            abvp_r += '\t_r->e[{0}] = {1};\n'.format(i+nri, ccode(rf[i]))
-        abvp_r += '}\n'
+            abvp_r += '\t\t_r[{0}] = {1}\n'.format(i+nri, ccode(rf[i]))
+        abvp_r += '\n'
         
         # df(y, z, p)
-        abvp_Df = 'void _abvp_Df(Vector _y, Vector _z, Vector _p, Matrix _Df) {\n'
+        abvp_Df = '\tdef _abvp_Df(self, _y, _z, _p, _Df):\n'
+        if o.constants:
+            abvp_Df += constants
         abvp_Df += fg_vars
         ny = len(y)
         nz = len(z)
@@ -203,61 +238,65 @@ class OCP(object):
             for j in range(len(y)):
                 df = diff(f[i], y[j])
                 if df != 0:
-                    abvp_Df += '\t_Df->e[{0}][{1}] = {2};\n'.format(i, j, ccode(df))
+                    abvp_Df += '\t\t_Df[{0}][{1}] = {2}\n'.format(i, j, ccode(df))
             for j in range(len(z)):
                 df = diff(f[i], z[j])
                 if df != 0:
-                    abvp_Df += '\t_Df->e[{0}][{1}] = {2};\n'.format(i, ny+j, ccode(df))
+                    abvp_Df += '\t\t_Df[{0}][{1}] = {2}\n'.format(i, ny+j, ccode(df))
             for j in range(len(p)):
                 df = diff(f[i], p[j])
                 if df != 0:
-                    abvp_Df += '\t_Df->e[{0}][{1}] = {2};\n'.format(i, ny+nz+j, ccode(df))
-        abvp_Df += '}\n'
+                    abvp_Df += '\t\t_Df[{0}][{1}] = {2}\n'.format(i, ny+nz+j, ccode(df))
+        abvp_Df += '\n'
         
         # dg(y, z, p)
-        abvp_Dg = 'void _abvp_Dg(Vector _y, Vector _z, Vector _p, Matrix _Dg) {\n'
+        abvp_Dg = '\tdef _abvp_Dg(self, _y, _z, _p, _alpha, _Dg):\n'
+        if o.constants:
+            abvp_Dg += constants
         abvp_Dg += fg_vars
         for i in range(len(g)):
             for j in range(len(y)):
                 df = diff(g[i], y[j])
                 if df != 0:
-                    abvp_Dg += '\t_Dg->e[{0}][{1}] = {2};\n'.format(i, j, ccode(df))
+                    abvp_Dg += '\t\t_Dg[{0}][{1}] = {2}\n'.format(i, j, ccode(df))
             for j in range(len(z)):
                 df = diff(g[i], z[j])
                 if df != 0:
-                    abvp_Dg += '\t_Dg->e[{0}][{1}] = {2};\n'.format(i, ny+j, ccode(df))
+                    abvp_Dg += '\t\t_Dg[{0}][{1}] = {2}\n'.format(i, ny+j, ccode(df))
             for j in range(len(p)):
                 df = diff(g[i], p[j])
                 if df != 0:
-                    abvp_Dg += '\t_Dg->e[{0}][{1}] = {2};\n'.format(i, ny+nz+j, ccode(df))
-        abvp_Dg += '}\n'
+                    abvp_Dg += '\t\t_Dg[{0}][{1}] = {2}\n'.format(i, ny+nz+j, ccode(df))
+        abvp_Dg += '\n'
         
         # dr(y0, y1, p)
-        abvp_Dr = 'void _abvp_Dr(Vector _y0, Vector _y1, Vector _p, Matrix _Dr) {\n'
+        abvp_Dr = '\tdef _abvp_Dr(self, _y0, _y1, _p, _Dr):\n'
+        if o.constants:
+            abvp_Dr += constants
         abvp_Dr += ri_vars
-        abvp_Dr += '\t// initial conditions\n'
+        abvp_Dr += '\t\t# initial conditions\n'
         for i in range(len(ri)):
             for j in range(len(y)):
                 dr = diff(ri[i], y[j])
                 if dr != 0:
-                    abvp_Dr += '\t_Dr->e[{0}][{1}] = {2};\n'.format(i, j, ccode(dr))
+                    abvp_Dr += '\t\t_Dr[{0}][{1}] = {2}\n'.format(i, j, ccode(dr))
             for j in range(len(p)):
                 dr = diff(ri[i], p[j])
                 if dr != 0:
-                    abvp_Dr += '\t_Dr->e[{0}][{1}] = {2};\n'.format(i, 2*ny+j, ccode(dr))
+                    abvp_Dr += '\t\t_Dr[{0}][{1}] = {2}\n'.format(i, 2*ny+j, ccode(dr))
         nri = len(ri)
-        abvp_Dr += '\t// final conditions\n'
+        abvp_Dr += '\t\t# final conditions\n'
         abvp_Dr += rf_vars
         for i in range(len(rf)):
             for j in range(len(y)):
                 dr = diff(rf[i], y[j])
                 if dr != 0:
-                    abvp_Dr += '\t_Dr->e[{0}][{1}] = {2};\n'.format(i+nri, ny+j, ccode(dr))
+                    abvp_Dr += '\t\t_Dr[{0}][{1}] = {2}\n'.format(i+nri, ny+j, ccode(dr))
             for j in range(len(p)):
                 dr = diff(rf[i], p[j])
                 if dr != 0:
-                    abvp_Dr += '\t_Dr->e[{0}][{1}] = {2};\n'.format(i+nri, 2*ny+j, ccode(dr))
-        abvp_Dr += '}\n'
+                    abvp_Dr += '\t\t_Dr[{0}][{1}] = {2}\n'.format(i+nri, 2*ny+j, ccode(dr))
+        abvp_Dr += '\n'
         
         # main()
         abvp_main = 'int main() {\n'
@@ -321,6 +360,7 @@ class OCP(object):
             abvp_main += '\tVectorDelete(_P0);\n'
         abvp_main += '\treturn _err;\n}\n'
         
+        '''
         abvp_header = '// Created by OCP.py\n'
         abvp_header += '#include <stdio.h>\n'
         abvp_header += '#include <float.h>\n'
@@ -397,15 +437,16 @@ class OCP(object):
             abvp_header += '\t\t}\n'
             abvp_header += '\t}\n'
             abvp_header += '}\n'
-        
-        print (abvp_header)
+        '''
+        # print (abvp_header)
+        print (bvp_dae_header)
         print (abvp_f)
         print (abvp_g)
         print (abvp_r)
         print (abvp_Df)
         print (abvp_Dg)
         print (abvp_Dr)
-        print (abvp_main)
+        # print (abvp_main)
 
 def _make_variables_py0(line, typ):
     rline = ''
@@ -582,9 +623,9 @@ def _ocp_translate(inpt, typ):
     print('raw lines done!')
     '''
     exec(t)
-    print ('/*\n')
+    print ('\'\'\'\n')
     print (_raw_lines_)
-    print ('*/\n')
+    print ('\'\'\'\n')
 
 if __name__ == '__main__':
     """
