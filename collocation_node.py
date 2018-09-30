@@ -23,9 +23,36 @@ class collocation_node:
         self.tspan = []
         self.y = np.zeros((size_y), dtype = np.float64)
         self.z = np.zeros((size_z), dtype = np.float64)
-        self.y_Dot = np.zeros((m, size_y), dtype = np.float64)
-        self.z_Tileda = np.zeros((m, size_z), dtype = np.float64)
+        self.y_dot = np.zeros((size_y, m), dtype = np.float64)
+        self.z_tilda = np.zeros((size_z, m), dtype = np.float64)
         self.p = np.zeros((size_p), dtype = np.float64)
+        self.y_tilda = np.zeros((size_y, m), dtype = np.float64)
+        self.f_a = np.zeros(((size_y + size_z) * m), dtype = np.float64)
+        self.f_b = np.zeros((size_y), dtype = np.float64)
+        self.J = np.zeros(((size_y + size_z) * m, size_y), dtype = np.float64)
+        self.W = np.zeros(((size_y + size_z) * m, (size_y + size_z) * m), dtype = np.float64)
+        self.V = np.zeros(((size_y + size_z) * m, size_p), dtype = np.float64)
+        self.D = np.zeros((size_y, (size_y + size_z) * m), dtype = np.float64)
+        self.A = np.zeros((size_y, size_y), dtype = np.float64)
+        self.C = np.zeros((size_y, size_y), dtype = np.float64)
+        self.H = np.zeros((size_y, size_p), dtype = np.float64)
+        self.b = np.zeros((size_y), dtype = np.float64)
+        '''
+        self.C_Tilde = np.zeros()
+        self.G_Tilde = np.zeros()
+        self.H_Tilde = np.zeros()
+        self.b_Tilde = np.zeros()
+        self.R = np.zeros()
+        self.E = np.zeros()
+        self.G = np.zeros()
+        self.K = np.zeros()
+        self.d = np.zeros()
+        self.Rp = np.zeros()
+        self.dp = np.zeros()
+        self.delta_p = np.zeros()
+        self.delta_y = np.zeros()
+        self.delta_k = np.zeros()
+        '''
 
     '''
         Input: y - a size_y vector of the value of the ODE variables
@@ -66,4 +93,11 @@ class collocation_node:
     def set_tspan(self, tspan):
         self.tspan = tspan
 
+    def set_y_dot(self, y_dot, j):
+        for i in range(self.size_y):
+            self.y_dot[i][j] = y_dot[i]
+
+    def set_z_tilda(self, z_tilda, j):
+        for i in range(self.size_z):
+            self.z_tilda[i][j] = z_tilda[i]
 
