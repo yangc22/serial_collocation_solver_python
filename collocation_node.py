@@ -87,11 +87,12 @@ class collocation_node:
         self.delta_t = delta_t
 
     '''
-        Input: tspan - a 1 x 2 vector representing the time span between the current node and the next node
+        Input: tspan representing the time span between the current node and the next node
         Set the time interval tspan.
     '''
     def set_tspan(self, tspan):
-        self.tspan = tspan
+        for i in range(tspan.shape[0]):
+            self.tspan.append(tspan[i])
 
     def set_y_dot(self, y_dot, j):
         for i in range(self.size_y):
