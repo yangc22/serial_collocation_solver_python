@@ -37,8 +37,11 @@ def collocation_solver(y0, z0, p0, tspan, n_y, n_z, n_p):
         print(sol[i].tspan)
 
     tspan0, q0 = struct_to_vec(size_y, size_z, size_p, m, N, sol)
+    sol = vec_to_struct(size_y, size_z, size_p, m, N, rk, tspan0, q0)
     #print(q0)
     # print(tspan0)
+    print(sol[N - 1].y, sol[N - 1].p)
+    F = F_q(size_y, size_z, size_p, m, N, rk, tspan0, q0, alpha)
 
 '''
     form the initial input of collocation points from y0, z0, p0
@@ -100,3 +103,67 @@ def struct_to_vec(size_y, size_z, size_p, m, N, sol):
     for j in range(size_p):
         q[start_index_p + j] = sol[N - 1].p[j]
     return tspan, q
+
+'''
+    generate the structure form of the system from the vector form
+'''
+def vec_to_struct(size_y, size_z, size_p, m, N, rk, tspan, q):
+    c = rk.c
+    sol = []
+    for i in range(N - 1):
+        node_i = collocation_node(size_y, size_z, size_p, m)
+        tspan_i = np.zeros((m), dtype = np.float64)
+        delta_t_i = tspan[i + 1] - tspan[i]
+        node_i.set_delta_t(delta_t_i)
+        start_index_y = i * (size_y + m * (size_y + size_z))
+        end_index_y = start_index_y + size_y
+        node_i.set_y(q[start_index_y : end_index_y])
+        for j in range(m):
+            tspan_i[j] = tspan[i] + c[j] * delta_t_i
+            start_index_y_collocation = end_index_y + j * (size_y + size_z)
+            end_index_y_collocation = start_index_y_collocation + size_y
+            start_index_z_collocation = end_index_y_collocation
+            end_index_z_collocation = start_index_z_collocation + size_z
+            node_i.set_y_dot(q[start_index_y_collocation : end_index_y_collocation], j)
+            node_i.set_z_tilda(q[start_index_z_collocation : end_index_z_collocation], j)
+        node_i.set_tspan(tspan_i)
+        sol.append(node_i)
+    node_N = collocation_node(size_y, size_z, size_p, m)
+    node_N.set_tspan(tspan)
+    start_index_y = (N - 1) * size_y + (N - 1) * m * (size_y + size_z)
+    end_index_y = start_index_y + size_y
+    start_index_p = end_index_y
+    end_index_p = start_index_p + size_p
+    node_N.set_y(q[start_index_y : end_index_y])
+    node_N.set_p(q[start_index_p : end_index_p])
+    sol.append(node_N)
+    return sol
+
+'''
+    calculate the value of ODE variables on each collocation point
+'''
+def  collocation_update(size_y, m, N, rk, sol):
+    a = rk.A
+    for i in range(N - 1):
+        delta_t_i = sol[i].delta_t
+        for j in range(m):
+            sum_j = np.zeros((size_y), dtype = np.float64)
+            for k in range(m):
+                for l in range(size_y):
+                    sum_j[l] += a[j][k] * sol[i].y_dot[l][k]
+            '''
+            y_tilda_j = np.zeros((size_y), dtype = float64)
+            for l in range(size_y):
+                y_tilda_j[l] = sol[i].y[l] + delta_t * sum_j[l]
+            '''
+            y_tilda_j = sol[i].y + delta_t_i * sum_j
+            sol[i].set_y_tilda(y_tilda_j, j)
+
+'''
+    calculate the residual of the system
+'''
+def F_q(size_y, size_z, size_p, m, N, rk, tspan, q, alpha):
+    F = np.zeros((N * size_y + (N - 1) * m * (size_y + size_z) + size_p), dtype = np.float64)
+    sol = vec_to_struct(size_y, size_z, size_p, m, N, rk, tspan, q)
+    collocation_update(size_y, m, N, rk, sol)
+    return F

@@ -102,3 +102,6 @@ class collocation_node:
         for i in range(self.size_z):
             self.z_tilda[i][j] = z_tilda[i]
 
+    def set_y_tilda(self, y_tilda, j):
+        for i in range(self.size_y):
+            self.y_tilda[i][j] = y_tilda[i]
