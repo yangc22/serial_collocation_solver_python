@@ -19,7 +19,7 @@ class collocation_node:
         self.size_z = size_z
         self.size_p = size_p
         self.m = m
-        self.delta_t = []
+        self.delta_t = 0
         self.tspan = []
         self.y = np.zeros((size_y), dtype = np.float64)
         self.z = np.zeros((size_z), dtype = np.float64)
@@ -29,6 +29,7 @@ class collocation_node:
         self.y_tilda = np.zeros((size_y, m), dtype = np.float64)
         self.f_a = np.zeros(((size_y + size_z) * m), dtype = np.float64)
         self.f_b = np.zeros((size_y), dtype = np.float64)
+        self.f_N = []
         self.J = np.zeros(((size_y + size_z) * m, size_y), dtype = np.float64)
         self.W = np.zeros(((size_y + size_z) * m, (size_y + size_z) * m), dtype = np.float64)
         self.V = np.zeros(((size_y + size_z) * m, size_p), dtype = np.float64)
@@ -105,3 +106,15 @@ class collocation_node:
     def set_y_tilda(self, y_tilda, j):
         for i in range(self.size_y):
             self.y_tilda[i][j] = y_tilda[i]
+
+    def set_f_a(self, f_a):
+        for i in range((self.size_y + self.size_z) * self.m):
+            self.f_a[i] = f_a[i]
+
+    def set_f_b(self, f_b):
+        for i in range(self.size_y):
+            self.f_b[i] = f_b[i]
+
+    def set_f_N(self, f_N):
+        for i in range(self.size_y + self.size_p):
+            self.f_N.append(f_N[i])

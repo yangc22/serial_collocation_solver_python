@@ -5,13 +5,15 @@ if __name__ == '__main__':
     n_y = 4
     n_z = 1
     n_p = 4
-    N = 5
+    N = 3
     y0 = np.ones((N, n_y), dtype = np.float64)
     y0[0][0] = -1
     y0[1][0] = -2
     y0[2][0] = -3
+    '''
     y0[3][0] = -4
     y0[4][0] = -5
+    '''
     z0 = np.ones((N, n_z), dtype = np.float64)
     p0 = np.ones((n_p), dtype = np.float64)
     p0[0] = 100
