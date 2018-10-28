@@ -3,6 +3,7 @@ from collocation_node import *
 import numpy as np
 import bvp_problem
 import math
+import matplotlib.pyplot as plt
 
 '''
     original MATLAB code sol(N).f_b is changed to sol[N - 1].f_N
@@ -26,10 +27,11 @@ def collocation_solver(y0, z0, p0, tspan, n_y, n_z, n_p):
     m = 3 # number of coloocation points
 
     tol = 1e-6
-    max_iter = 2
+    max_iter = 500
     max_linsearch = 20
     nodes_min = 3
     alpha = 1 # coontinuation parameter
+    alpha_final = 1
     beta = 0.8 # scale factor
 
     rk = lobatto(m)
@@ -48,14 +50,16 @@ def collocation_solver(y0, z0, p0, tspan, n_y, n_z, n_p):
             if (norm_F_q0 < tol):
                 print("solution found")
                 break
+            Jacobian_construct(bvp_dae, size_y, size_z, size_p, m, N, rk, alpha, sol)
             M = f_d_jacobian(bvp_dae, size_y, size_z, size_p, m, N, rk, tspan0, q0, alpha)
-            delta_q0 = np.linalg.solve(M, F_q0)
+            delta_q0 = np.linalg.solve(M, -F_q0)
+
             norm_delta_q0 = np.linalg.norm(delta_q0, np.inf)
             if (norm_delta_q0 < tol):
                 print("solution found")
                 break
             print("start lin search")
-            print(delta_q0)
+            # print(delta_q0)
             alpha0 = 1
             for i in range(max_linsearch):
                 q_new = q0 + alpha0 * delta_q0
@@ -66,7 +70,23 @@ def collocation_solver(y0, z0, p0, tspan, n_y, n_z, n_p):
                     break
                 alpha0 /= 2
         print("final solution found")
+        if (alpha <= alpha_final):
+            break
     print("done")
+
+    x1 = []
+    x2 = []
+    for i in range(N):
+        x1.append(q0[i * (m * (size_y + size_z) + size_y)])
+        x2.append(q0[1 + i * (m * (size_y + size_z) + size_y)])
+    plt.figure(0)
+    plt.plot(tspan0, x1)
+    plt.grid()
+    plt.show()
+    plt.figure(1)
+    plt.plot(tspan0, x2)
+    plt.grid()
+    plt.show()
 
 
 '''
@@ -268,3 +288,36 @@ def f_d_jacobian(bvp_dae, size_y, size_z, size_p, m, N, rk, tspan, q, alpha):
         for j in range(size):
             M[j][i] = (F_s_x_new[j] - F_s_x[j]) / h
     return M
+
+def Jacobian_construct(bvp_dae, size_y, size_z, size_p, m, N, rk, alpha, sol):
+
+    b = rk.b
+    a = rk.A
+    p0 = sol[N - 1].p
+
+    for i in range(N - 1):
+        for j in range(m):
+            y = sol[i].get_y_tilda(j)
+            z = sol[i].get_z_tilda(j)
+            Dh = np.zeros((size_y, (size_y + size_z + size_p)), dtype = np.float64)
+            Dg = np.zeros((size_z, (size_y + size_z + size_p)), dtype = np.float64)
+            bvp_dae._abvp_f(y, z, p0, Dh)
+            bvp_dae._abvp_g(y, z, p0, alpha, Dg)
+            sol[i].set_Jacobian(a, b[j], Dh, Dg, j)
+    Dr = Dh = np.zeros(((size_y + size_p), (size_y + size_y + size_p)), dtype = np.float64)
+    y0 = sol[0].get_y()
+    yM = sol[0].get_y()
+    bvp_dae._abvp_Dr(y0, yM, p0, Dr)
+    r_y0 = np.zeros((size_y + size_p, size_y), dtype = np.float64)
+    r_yM = np.zeros((size_y + size_p, size_y), dtype = np.float64)
+    r_p0 = np.zeros((size_y + size_p, size_p), dtype = np.float64)
+    for i in range(size_y + size_p):
+        for j in range(size_y):
+            r_y0[i][j] = Dr[i][j]
+        for j in range(size_y):
+            r_yM[i][j] = Dr[i][j + size_y]
+        for j in range(size_y):
+            r_p0[i][j] = Dr[i][j + (size_y + size_y)]
+    sol[0].set_B(r_y0)
+    sol[N - 1].set_B(r_yM)
+    sol[N - 1].set_V(r_p0)
