@@ -160,34 +160,35 @@ class collocation_node:
             for i in range(self.size_y):
                 for j in range(self.size_y):
                     hy[i][j] = Dh[i][j]
-                for j in range(self.size_y):
+                for j in range(self.size_z):
                     hz[i][j] = Dh[i][j + self.size_y]
-                for j in range(self.size_y):
+                for j in range(self.size_p):
                     hp[i][j] = Dh[i][j + (self.size_y + self.size_z)]
             for i in range(self.size_z):
                 for j in range(self.size_y):
                     gy[i][j] = Dg[i][j]
-                for j in range(self.size_y):
+                for j in range(self.size_z):
                     gz[i][j] = Dg[i][j + self.size_y]
-                for j in range(self.size_y):
+                for j in range(self.size_p):
                     gp[i][j] = Dg[i][j + (self.size_y + self.size_z)]
 
             start_row_index_h = j_col * (self.size_y + self.size_z)
             for i in range(self.size_y):
                 for j in range(self.size_y):
-                    J[start_row_index_h + i][k] = hy[i][j]
+                    self.J[start_row_index_h + i][j] = hy[i][j]
                 for j in range(self.size_p):
-                    V[start_row_index_h + i][k] = hp[i][j]
+                    print(i, j, hp[i][j])
+                    self.V[start_row_index_h + i][j] = hp[i][j]
             start_row_index_g = start_row_index_h + self.size_y
             for i in range(self.size_z):
                 for j in range(self.size_y):
-                    J[start_row_index_g + i][k] = gy[i][j]
+                    self.J[start_row_index_g + i][j] = gy[i][j]
                 for j in range(self.size_p):
-                    V[start_row_index_g + i][k] = gp[i][j]
+                    self.V[start_row_index_g + i][j] = gp[i][j]
             for i in range(self.size_y):
-                D[i][i + j_col * (self.size_y + self.size_z)] = self.delta_t * b * 1
+                self.D[i][i + j_col * (self.size_y + self.size_z)] = self.delta_t * b * 1
 
-            for i in range(m):
+            for i in range(self.m):
                 start_row_index = j_col * (self.size_y + self.size_z)
                 start_col_index = j_col * (self.size_y + self.size_z)
                 w_tmp = np.zeros(((self.size_y + self.size_z), (self.size_y + self.size_z)), dtype = np.float64)
@@ -205,7 +206,7 @@ class collocation_node:
                             w_tmp[j + self.size_y][k + self.size_y] = gz[j][k]
                     for j in range(self.size_y + self.size_z):
                         for k in range(self.size_y + self.size_z):
-                            W[start_row_index + j][start_col_index + k] = w_tmp[j][k]
+                            self.W[start_row_index + j][start_col_index + k] = w_tmp[j][k]
                 else:
                     for j in range(self.size_y):
                         for k in range(self.size_y):
@@ -219,4 +220,4 @@ class collocation_node:
                             w_tmp[j + self.size_y][k + self.size_y] = 0
                     for j in range(self.size_y + self.size_z):
                         for k in range(self.size_y + self.size_z):
-                            W[start_row_index + j][start_col_index + k] = w_tmp[j][k]
+                            self.W[start_row_index + j][start_col_index + k] = w_tmp[j][k]
