@@ -27,7 +27,7 @@ def collocation_solver(y0, z0, p0, tspan, n_y, n_z, n_p):
     m = 3 # number of coloocation points
 
     tol = 1e-6
-    max_iter = 500
+    max_iter = 1
     max_linsearch = 20
     nodes_min = 3
     alpha = 1 # coontinuation parameter
@@ -41,8 +41,27 @@ def collocation_solver(y0, z0, p0, tspan, n_y, n_z, n_p):
 
     tspan0, q0 = struct_to_vec(size_y, size_z, size_p, m, N, sol)
     sol = vec_to_struct(size_y, size_z, size_p, m, N, rk, tspan0, q0)
+
     F, sol = F_q(bvp_dae, size_y, size_z, size_p, m, N, rk, tspan0, q0, alpha)
-    M = f_d_jacobian(bvp_dae, size_y, size_z, size_p, m, N, rk, tspan0, q0, alpha)
+
+    # M = f_d_jacobian(bvp_dae, size_y, size_z, size_p, m, N, rk, tspan0, q0, alpha)
+    Jacobian_construct(bvp_dae, size_y, size_z, size_p, m, N, rk, alpha, sol)
+
+    for i in range(N):
+        print("i: ", i)
+        print("J: ", sol[i].J)
+        print("V: ", sol[i].V)
+        print("D: ", sol[i].D)
+        print("W: ", sol[i].W)
+        print("B: ", sol[i].B)
+        print("V_N: ", sol[i].V_N)
+        print("A: ", sol[i].A)
+        print("C: ", sol[i].C)
+        print("H: ", sol[i].H)
+        print("b: ", sol[i].b)
+        print("b_N: ", sol[i].b_N)
+
+    '''
     for alphacal in range(max_iter):
         for iter_time in range(max_iter):
             F_q0, sol = F_q(bvp_dae, size_y, size_z, size_p, m, N, rk, tspan0, q0, alpha)
@@ -51,7 +70,7 @@ def collocation_solver(y0, z0, p0, tspan, n_y, n_z, n_p):
                 print("solution found")
                 break
             Jacobian_construct(bvp_dae, size_y, size_z, size_p, m, N, rk, alpha, sol)
-            M = f_d_jacobian(bvp_dae, size_y, size_z, size_p, m, N, rk, tspan0, q0, alpha)
+            # M = f_d_jacobian(bvp_dae, size_y, size_z, size_p, m, N, rk, tspan0, q0, alpha)
             delta_q0 = np.linalg.solve(M, -F_q0)
 
             norm_delta_q0 = np.linalg.norm(delta_q0, np.inf)
@@ -73,20 +92,7 @@ def collocation_solver(y0, z0, p0, tspan, n_y, n_z, n_p):
         if (alpha <= alpha_final):
             break
     print("done")
-
-    x1 = []
-    x2 = []
-    for i in range(N):
-        x1.append(q0[i * (m * (size_y + size_z) + size_y)])
-        x2.append(q0[1 + i * (m * (size_y + size_z) + size_y)])
-    plt.figure(0)
-    plt.plot(tspan0, x1)
-    plt.grid()
-    plt.show()
-    plt.figure(1)
-    plt.plot(tspan0, x2)
-    plt.grid()
-    plt.show()
+    '''
 
 
 '''
@@ -301,8 +307,8 @@ def Jacobian_construct(bvp_dae, size_y, size_z, size_p, m, N, rk, alpha, sol):
             z = sol[i].get_z_tilda(j)
             Dh = np.zeros((size_y, (size_y + size_z + size_p)), dtype = np.float64)
             Dg = np.zeros((size_z, (size_y + size_z + size_p)), dtype = np.float64)
-            bvp_dae._abvp_f(y, z, p0, Dh)
-            bvp_dae._abvp_g(y, z, p0, alpha, Dg)
+            bvp_dae._abvp_Df(y, z, p0, Dh)
+            bvp_dae._abvp_Dg(y, z, p0, alpha, Dg)
             sol[i].set_Jacobian(a, b[j], Dh, Dg, j)
     Dr = Dh = np.zeros(((size_y + size_p), (size_y + size_y + size_p)), dtype = np.float64)
     y0 = sol[0].get_y()
@@ -320,4 +326,12 @@ def Jacobian_construct(bvp_dae, size_y, size_z, size_p, m, N, rk, alpha, sol):
             r_p0[i][j] = Dr[i][j + (size_y + size_y)]
     sol[0].set_B(r_y0)
     sol[N - 1].set_B(r_yM)
-    sol[N - 1].set_V(r_p0)
+    sol[N - 1].set_VN(r_p0)
+
+    for i in range(N - 1):
+        sol[i].update_Jacobian()
+    sol[N - 1].set_HN(sol[N - 1].V_N)
+    sol[N - 1].set_bN(sol[N - 1].f_N)
+
+#def qr_decomposition(size_s, size_p, N, sol):
+
