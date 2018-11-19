@@ -43,12 +43,9 @@ def collocation_solver(y0, z0, p0, tspan, n_y, n_z, n_p):
 
     '''
     sol = vec_to_struct(size_y, size_z, size_p, m, N, rk, tspan0, q0)
-
     F, sol = F_q(bvp_dae, size_y, size_z, size_p, m, N, rk, tspan0, q0, alpha)
-
     # M = f_d_jacobian(bvp_dae, size_y, size_z, size_p, m, N, rk, tspan0, q0, alpha)
     Jacobian_construct(bvp_dae, size_y, size_z, size_p, m, N, rk, alpha, sol)
-
     for i in range(N):
         print("i: ", i)
         print("J: ", sol[i].J)
@@ -62,7 +59,6 @@ def collocation_solver(y0, z0, p0, tspan, n_y, n_z, n_p):
         print("H: ", sol[i].H)
         print("b: ", sol[i].b)
         print("b_N: ", sol[i].b_N)
-
     qr_decomposition(size_y,size_p, N, sol)
     print(sol[0].R)
     print(sol[0].E)
@@ -81,6 +77,9 @@ def collocation_solver(y0, z0, p0, tspan, n_y, n_z, n_p):
 
     delta_q = get_delta_q(size_y, size_z, size_p, m, N, sol)
     print(delta_q)
+
+    y, z, p = recover_solution(size_y, size_z, size_p, m, N, rk, tspan0, q0)
+
     '''
 
     for alphacal in range(max_iter):
@@ -97,7 +96,7 @@ def collocation_solver(y0, z0, p0, tspan, n_y, n_z, n_p):
             backward_substitution(N, sol)
             delta_q0 = get_delta_q(size_y, size_z, size_p, m, N, sol)
             norm_delta_q0 = np.linalg.norm(delta_q0, np.inf)
-            
+
             if (norm_delta_q0 < tol):
                 print("solution found")
                 break
@@ -115,7 +114,8 @@ def collocation_solver(y0, z0, p0, tspan, n_y, n_z, n_p):
         print("final solution found")
         if (alpha <= alpha_final):
             break
-    print("done")
+    y0, z0, p = recover_solution(size_y, size_z, size_p, m, N, rk, tspan0, q0)
+    plot_result(size_y, size_z, tspan0, y0, z0)
 
 
 '''
@@ -431,3 +431,45 @@ def get_delta_q(size_y, size_z, size_p, m, N, sol):
     for j in range(size_y + size_p):
         delta_q[start_index + j] = delta_N[j]
     return delta_q
+
+def recover_solution(size_y, size_z, size_p, m, N, rk, tspan, q):
+    sol = vec_to_struct(size_y, size_z, size_p, m, N, rk, tspan, q)
+    y = np.zeros((N, size_y), dtype = np.float64)
+    y_dot = np.zeros(((N - 1) * m, size_y), dtype = np.float64)
+    z = np.zeros((N, size_z), dtype = np.float64)
+    p = sol[N - 1].p
+
+    for i in range(N):
+        y[i, :] = sol[i].y
+        if i != N - 1:
+            tau = 0
+            for j in range(m):
+                row_mat = i * m + j
+                y_dot[row_mat, :] = sol[i].y_dot[:, j]
+        if i != N - 1:
+            tau = 0
+            L = rk.L(tau)
+            for j in range(m):
+                z[i, :] += L[j] * (sol[i].z_tilda[:, j])
+        elif i == N - 1:
+            tau = 1
+            L = rk.L(tau)
+            for j in range(m):
+                z[i, :] += L[j] * (sol[N - 2].z_tilda[:, j])
+    return y, z, p
+
+def plot_result(size_y, size_z, tspan, y, z):
+    for i in range(size_y):
+        fig, ax = plt.subplots()
+        ax.plot(tspan, y[:, i])
+        ax.set(xlabel='time', ylabel='ODE variable %s' %i,
+               title='ODE variable')
+        ax.grid()
+        plt.show()
+    for i in range(size_z):
+        fig, ax = plt.subplots()
+        ax.plot(tspan, z[:, i])
+        ax.set(xlabel='time', ylabel='DAE variable %s' %i,
+               title='DAE variable')
+        ax.grid()
+        plt.show()

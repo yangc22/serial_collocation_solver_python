@@ -5,7 +5,7 @@ if __name__ == '__main__':
     n_y = 4
     n_z = 1
     n_p = 4
-    N = 3
+    N = 101
     y0 = np.ones((N, n_y), dtype = np.float64)
     '''
     y0[0][0] = -1
