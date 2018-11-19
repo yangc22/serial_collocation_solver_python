@@ -27,7 +27,7 @@ def collocation_solver(y0, z0, p0, tspan, n_y, n_z, n_p):
     m = 3 # number of coloocation points
 
     tol = 1e-6
-    max_iter = 1
+    max_iter = 500
     max_linsearch = 20
     nodes_min = 3
     alpha = 1 # coontinuation parameter
@@ -40,6 +40,8 @@ def collocation_solver(y0, z0, p0, tspan, n_y, n_z, n_p):
     sol = form_initial_input(size_y, size_z, size_p, m, N, tspan, y0, z0, p0, alpha, rk, bvp_dae)
 
     tspan0, q0 = struct_to_vec(size_y, size_z, size_p, m, N, sol)
+
+    '''
     sol = vec_to_struct(size_y, size_z, size_p, m, N, rk, tspan0, q0)
 
     F, sol = F_q(bvp_dae, size_y, size_z, size_p, m, N, rk, tspan0, q0, alpha)
@@ -61,7 +63,26 @@ def collocation_solver(y0, z0, p0, tspan, n_y, n_z, n_p):
         print("b: ", sol[i].b)
         print("b_N: ", sol[i].b_N)
 
+    qr_decomposition(size_y,size_p, N, sol)
+    print(sol[0].R)
+    print(sol[0].E)
+    print(sol[0].G)
+    print(sol[0].K)
+    print(sol[0].d)
+    print(sol[N - 2].d)
+    print(sol[N - 1].d)
+    print(sol[N - 1].dp)
+    print(sol[N - 1].Rp)
+
+    backward_substitution(N, sol)
+    for i in range(N):
+        print(sol[i].delta_y)
+        print(sol[i].delta_k)
+
+    delta_q = get_delta_q(size_y, size_z, size_p, m, N, sol)
+    print(delta_q)
     '''
+
     for alphacal in range(max_iter):
         for iter_time in range(max_iter):
             F_q0, sol = F_q(bvp_dae, size_y, size_z, size_p, m, N, rk, tspan0, q0, alpha)
@@ -71,9 +92,12 @@ def collocation_solver(y0, z0, p0, tspan, n_y, n_z, n_p):
                 break
             Jacobian_construct(bvp_dae, size_y, size_z, size_p, m, N, rk, alpha, sol)
             # M = f_d_jacobian(bvp_dae, size_y, size_z, size_p, m, N, rk, tspan0, q0, alpha)
-            delta_q0 = np.linalg.solve(M, -F_q0)
-
+            # delta_q0 = np.linalg.solve(M, -F_q0)
+            qr_decomposition(size_y,size_p, N, sol)
+            backward_substitution(N, sol)
+            delta_q0 = get_delta_q(size_y, size_z, size_p, m, N, sol)
             norm_delta_q0 = np.linalg.norm(delta_q0, np.inf)
+            
             if (norm_delta_q0 < tol):
                 print("solution found")
                 break
@@ -92,7 +116,6 @@ def collocation_solver(y0, z0, p0, tspan, n_y, n_z, n_p):
         if (alpha <= alpha_final):
             break
     print("done")
-    '''
 
 
 '''
@@ -333,5 +356,78 @@ def Jacobian_construct(bvp_dae, size_y, size_z, size_p, m, N, rk, alpha, sol):
     sol[N - 1].set_HN(sol[N - 1].V_N)
     sol[N - 1].set_bN(sol[N - 1].f_N)
 
-#def qr_decomposition(size_s, size_p, N, sol):
+def qr_decomposition(size_s, size_p, N, sol):
+    sol[0].C_tilda = sol[0].C
+    sol[0].G_tilda = sol[0].A
+    sol[0].H_tilda = sol[0].H
+    sol[0].b_tilda = sol[0].b
+    for i in range(N - 2):
+        C_tilda_A = np.concatenate((sol[i].C_tilda, sol[i + 1].A), axis = 0)
+        Q, R = np.linalg.qr(C_tilda_A, mode = 'complete')
+        sol[i].R = R[0 : size_s, :]
+        zero_C = np.concatenate((np.zeros((size_s, size_s), dtype = np.float64), sol[i + 1].C), axis = 0)
+        EC = np.dot(Q.T, zero_C)
+        sol[i].E = EC[0 : size_s, 0 : size_s]
+        sol[i + 1].C_tilda = EC[size_s : 2 * size_s, 0 : size_s]
+        G_tilda_zero = np.concatenate((sol[i].G_tilda, np.zeros((size_s, size_s), dtype = np.float64)), axis = 0)
+        GG = np.dot(Q.T, G_tilda_zero)
+        sol[i].G = GG[0 : size_s, 0 : size_s]
+        sol[i + 1].G_tilda = GG[size_s : 2 * size_s, 0 : size_s]
+        H_tilda_H = np.concatenate((sol[i].H_tilda, sol[i + 1].H), axis = 0)
+        JH = np.dot(Q.T, H_tilda_H)
+        sol[i].K = JH[0 : size_s, 0 : size_p]
+        sol[i + 1].H_tilda = JH[size_s : 2 * size_s, 0 : size_p]
+        b_tilda_b = np.concatenate((sol[i].b_tilda, sol[i + 1].b), axis = 0)
+        db = np.dot(Q.T, b_tilda_b)
+        sol[i].d = db[0 : size_s]
+        sol[i + 1].b_tilda = db[size_s : 2 * size_s]
+    final_block_up = np.concatenate((sol[N - 2].C_tilda, sol[N - 2].G_tilda, sol[N - 2].H_tilda), axis = 1)
+    H_N = np.asarray(sol[N - 1].H_N)
+    final_block_down = np.concatenate((sol[N - 1].B, sol[0].B, H_N), axis = 1)
+    final_block = np.concatenate((final_block_up, final_block_down), axis = 0)
+    Q, R = np.linalg.qr(final_block, mode = 'complete')
+    sol[N - 2].R = R[0 : size_s, 0 : size_s]
+    sol[N - 2].G = R[0 : size_s, size_s : 2 * size_s]
+    sol[N - 2].K = R[0 : size_s, 2 * size_s : 2 * size_s + size_p]
+    sol[N - 1].R = R[size_s : 2 * size_s, size_s : 2 * size_s]
+    sol[N - 1].K = R[size_s : 2 * size_s, 2 * size_s : 2 * size_s + size_p]
+    sol[N - 1].Rp = R[2 * size_s : 2 * size_s + size_p, 2 * size_s : 2 * size_s + size_p]
 
+    b_N = np.asarray(sol[N - 1].b_N)
+    b_tilda_b = np.concatenate((sol[N - 2].b_tilda, b_N), axis = 0)
+    d = np.dot(Q.T, b_tilda_b)
+    sol[N - 2].d = d[0 : size_s]
+    sol[N - 1].d = d[size_s : 2 * size_s]
+    sol[N - 1].dp = d[2 * size_s : 2 *size_s + size_p]
+
+def backward_substitution(N, sol):
+    delta_p = np.linalg.solve(sol[N - 1].Rp, sol[N - 1].dp)
+    sol[N - 1].delta_p = delta_p
+    delta_y1 = np.linalg.solve(sol[N - 1].R, (sol[N - 1].d - np.dot(sol[N - 1].K, delta_p)))
+    sol[0].set_delta_y(delta_y1)
+    b_yN = sol[N - 2].d - np.dot(sol[N - 2].G, delta_y1) - np.dot(sol[N - 2].K, delta_p)
+    delta_yN = np.linalg.solve(sol[N - 2].R, b_yN)
+    sol[N - 1].set_delta_y(delta_yN)
+    for i in range(N - 2, 0, -1):
+        b_yi = sol[i - 1].d - np.dot(sol[i - 1].E, sol[i + 1].delta_y) - np.dot(sol[i - 1].G, delta_y1) - np.dot(sol[i - 1].K, delta_p)
+        delta_yi = np.linalg.solve(sol[i - 1].R, b_yi)
+        sol[i].set_delta_y(delta_yi)
+
+    for i in range(N - 1):
+        W_inv = np.linalg.inv(sol[i].W)
+        tmp = -sol[i].f_a - np.dot(sol[i].J, sol[i].delta_y) - np.dot(sol[i].V, delta_p)
+        delta_k = np.dot(W_inv, tmp)
+        sol[i].set_delta_k(delta_k)
+
+def get_delta_q(size_y, size_z, size_p, m, N, sol):
+    delta_q = np.zeros((N * size_y + (N - 1) * m * (size_y + size_z) + size_p), dtype = np.float64)
+    for i in range(N - 1):
+        start_index = i * (size_y + m * (size_y + size_z))
+        delta_i = np.concatenate((sol[i].delta_y, sol[i].delta_k), axis = 0)
+        for j in range ((size_y + m * (size_y + size_z))):
+            delta_q[start_index + j] = delta_i[j]
+    delta_N = np.concatenate((sol[N - 1].delta_y, sol[N - 1].delta_p), axis = 0)
+    start_index = (N - 1) * (size_y + m * (size_y + size_z))
+    for j in range(size_y + size_p):
+        delta_q[start_index + j] = delta_N[j]
+    return delta_q

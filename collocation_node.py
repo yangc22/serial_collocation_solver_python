@@ -42,12 +42,13 @@ class collocation_node:
         self.H_N = []
         self.b = np.zeros((size_y), dtype = np.float64)
         self.b_N = []
-
+        self.delta_y = np.zeros((size_y), dtype = np.float64)
+        self.delta_k = np.zeros(((size_y + size_z) * m), dtype = np.float64)
         '''
-        self.C_Tilde = np.zeros()
-        self.G_Tilde = np.zeros()
-        self.H_Tilde = np.zeros()
-        self.b_Tilde = np.zeros()
+        self.C_tilda = np.zeros((size_y, size_y), dtype = np.float64)
+        self.G_tilda = np.zeros((size_y, size_y), dtype = np.float64)
+        self.H_tilda = np.zeros((size_y, size_p), dtype = np.float64)
+        self.b_tilda = np.zeros((size_y), dtype = np.float64)
         self.R = np.zeros()
         self.E = np.zeros()
         self.G = np.zeros()
@@ -168,6 +169,14 @@ class collocation_node:
     def set_bN(self, f_b):
         for i in range(self.size_y + self.size_p):
             self.b_N.append(-f_b[i])
+
+    def set_delta_y(self, delta_y):
+        for i in range(self.size_y):
+            self.delta_y[i] = delta_y[i]
+
+    def set_delta_k(self, delta_k):
+        for i in range((self.size_y + self.size_z) * self.m):
+            self.delta_k[i] = delta_k[i]
 
     # j_col : jth collocation node
     def set_Jacobian(self, a, b, Dh, Dg, j_col):
