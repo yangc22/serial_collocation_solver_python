@@ -101,22 +101,50 @@ class collocation_node:
         for i in range(tspan.shape[0]):
             self.tspan.append(tspan[i])
 
+    '''
+        Input:
+                y_dot : value of the derivative of the ODE variable y
+                j : index of the collocation point
+        Set the y_dot at the jth collocation point
+    '''
     def set_y_dot(self, y_dot, j):
         for i in range(self.size_y):
             self.y_dot[i][j] = y_dot[i]
 
+    '''
+        Input:
+                z_tilda : value of the DAE variable z
+                j : index of the collocation point
+        Set the z_tilda at the jth collocation point
+    '''
     def set_z_tilda(self, z_tilda, j):
         for i in range(self.size_z):
             self.z_tilda[i][j] = z_tilda[i]
 
+    '''
+        Input:
+                y_tilda : value of the ODE variable y
+                j : index of the collocation point
+        Set the y_tilda at the jth collocation point
+    '''
     def set_y_tilda(self, y_tilda, j):
         for i in range(self.size_y):
             self.y_tilda[i][j] = y_tilda[i]
 
+    '''
+        Input:
+                f_a : value of the residual of all the collocation points of the time interval
+        Set the residual f_a of the time interval
+    '''
     def set_f_a(self, f_a):
         for i in range((self.size_y + self.size_z) * self.m):
             self.f_a[i] = f_a[i]
 
+    '''
+        Input:
+                f_b : value of the residual of at the node
+        Set the residual f_b of the node
+    '''
     def set_f_b(self, f_b):
         for i in range(self.size_y):
             self.f_b[i] = f_b[i]

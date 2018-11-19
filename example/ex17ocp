@@ -1,0 +1,35 @@
+# Dissanayake, M., Goh, C. J., and Phan-Thien, N.,
+# Time-optimal trajectories for robot manipulators, 
+# Robotica, Vol. 9, pp. 131--138, 1991.
+
+Constants = [rho = 1.0e3, THETA_10=0.0, THETA_20=-2.0, THETA_1f=1.0, THETA_2f=-1.0,
+	L_1=0.4, L_2=0.4, m_1=0.5, m_2=0.5, Eye_1=0.1, Eye_2=0.1, el_1=0.2, el_2=0.2];
+StateVariables 			= [x1, x2, x3, x4];
+ControlVariables 		= [u1, u2];
+ParameterVariables		= [p];
+InitialConstraints 		= [x1-THETA_10,	x2-THETA_20, x3, x4];
+TerminalConstraints 	= [x1-THETA_1f, x2-THETA_2f, x3, x4];
+#TerminalPenalty	= (x1-THETA_1f)*(x1-THETA_1f) + (x2-THETA_2f)*(x2-THETA_2f) + x3*x3 + x4*x4;
+CostFunctional 			= p*(rho + x1*x1 + x2*x2 + x3*x3 + x4*x4 + u1*u1 + u2*u2);
+cs1 = cos(x2);
+H_11 = Eye_1+Eye_2+m_1*el_1*el_1+m_2*(L_1*L_1+el_2*el_2+2.0*L_1*el_2*cs1);
+H_12 = Eye_2+m_2*el_2*el_2+m_2*L_1*el_2*cs1;
+H_22 = Eye_2+m_2*el_2*el_2;
+h = m_2*L_1*el_2*sin(x2);
+delta = 1.0/(H_11*H_22-H_12*H_12);
+	
+DifferentialEquations 	= [p*x3, p*x4, 
+	p*delta*(2.0*h*H_22*x3*x4+h*H_22*x4*x4+h*H_12*x3*x3+H_22*u1-H_12*u2),
+	p*delta*(-2.0*h*H_12*x3*x4-h*H_11*x3*x3-h*H_12*x4*x4+H_11*u2-H_12*u1)];
+
+ParameterEstimate		= [1.0];
+
+InequalityConstraints	= [u1 - 10.0, -10.0 - u1, u2 - 10.0, -10.0 - u2, -p];
+
+Tolerance				= 1.0e-3;
+InputFile				= "ex16.data";
+OutputFile				= "ex17.data";
+Display					= NO;
+MaximumNewtonIterations = 500;
+MaximumMeshRefinements	= 50;
+MaximumNodes            = 5000;

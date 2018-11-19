@@ -46,49 +46,6 @@ def collocation_solver(bvp_dae):
         alpha_final = 1
     beta = 0.8 # scale factor
 
-    '''
-    rk = lobatto(m)
-    sol = form_initial_input(size_y, size_z, size_p, m, N, tspan, y0, z0, p0, alpha, rk, bvp_dae)
-    tspan0, q0 = struct_to_vec(size_y, size_z, size_p, m, N, sol)
-    sol = vec_to_struct(size_y, size_z, size_p, m, N, rk, tspan0, q0)
-    F, sol = F_q(bvp_dae, size_y, size_z, size_p, m, N, rk, tspan0, q0, alpha)
-    # M = f_d_jacobian(bvp_dae, size_y, size_z, size_p, m, N, rk, tspan0, q0, alpha)
-    Jacobian_construct(bvp_dae, size_y, size_z, size_p, m, N, rk, alpha, sol)
-    for i in range(N):
-        print("i: ", i)
-        print("J: ", sol[i].J)
-        print("V: ", sol[i].V)
-        print("D: ", sol[i].D)
-        print("W: ", sol[i].W)
-        print("B: ", sol[i].B)
-        print("V_N: ", sol[i].V_N)
-        print("A: ", sol[i].A)
-        print("C: ", sol[i].C)
-        print("H: ", sol[i].H)
-        print("b: ", sol[i].b)
-        print("b_N: ", sol[i].b_N)
-    qr_decomposition(size_y,size_p, N, sol)
-    print(sol[0].R)
-    print(sol[0].E)
-    print(sol[0].G)
-    print(sol[0].K)
-    print(sol[0].d)
-    print(sol[N - 2].d)
-    print(sol[N - 1].d)
-    print(sol[N - 1].dp)
-    print(sol[N - 1].Rp)
-
-    backward_substitution(N, sol)
-    for i in range(N):
-        print(sol[i].delta_y)
-        print(sol[i].delta_k)
-
-    delta_q = get_delta_q(size_y, size_z, size_p, m, N, sol)
-    print(delta_q)
-
-    y, z, p = recover_solution(size_y, size_z, size_p, m, N, rk, tspan0, q0)
-
-    '''
     start_time = time.time()
     rk = lobatto(m)
     sol = form_initial_input(size_y, size_z, size_p, m, N, tspan, y0, z0, p0, alpha, rk, bvp_dae)
@@ -477,14 +434,14 @@ def plot_result(size_y, size_z, tspan, y, z):
     for i in range(size_y):
         fig, ax = plt.subplots()
         ax.plot(tspan, y[:, i])
-        ax.set(xlabel='time', ylabel='ODE variable %s' %i,
+        ax.set(xlabel='time', ylabel='ODE variable %s' %(i + 1),
                title='ODE variable')
         ax.grid()
         plt.show()
     for i in range(size_z):
         fig, ax = plt.subplots()
         ax.plot(tspan, z[:, i])
-        ax.set(xlabel='time', ylabel='DAE variable %s' %i,
+        ax.set(xlabel='time', ylabel='DAE variable %s' %(i + 1),
                title='DAE variable')
         ax.grid()
         plt.show()
@@ -492,3 +449,47 @@ def plot_result(size_y, size_z, tspan, y, z):
 if __name__ == '__main__':
     bvp_dae = bvp_problem.bvp_dae()
     collocation_solver(bvp_dae)
+
+    '''
+    rk = lobatto(m)
+    sol = form_initial_input(size_y, size_z, size_p, m, N, tspan, y0, z0, p0, alpha, rk, bvp_dae)
+    tspan0, q0 = struct_to_vec(size_y, size_z, size_p, m, N, sol)
+    sol = vec_to_struct(size_y, size_z, size_p, m, N, rk, tspan0, q0)
+    F, sol = F_q(bvp_dae, size_y, size_z, size_p, m, N, rk, tspan0, q0, alpha)
+    # M = f_d_jacobian(bvp_dae, size_y, size_z, size_p, m, N, rk, tspan0, q0, alpha)
+    Jacobian_construct(bvp_dae, size_y, size_z, size_p, m, N, rk, alpha, sol)
+    for i in range(N):
+        print("i: ", i)
+        print("J: ", sol[i].J)
+        print("V: ", sol[i].V)
+        print("D: ", sol[i].D)
+        print("W: ", sol[i].W)
+        print("B: ", sol[i].B)
+        print("V_N: ", sol[i].V_N)
+        print("A: ", sol[i].A)
+        print("C: ", sol[i].C)
+        print("H: ", sol[i].H)
+        print("b: ", sol[i].b)
+        print("b_N: ", sol[i].b_N)
+    qr_decomposition(size_y,size_p, N, sol)
+    print(sol[0].R)
+    print(sol[0].E)
+    print(sol[0].G)
+    print(sol[0].K)
+    print(sol[0].d)
+    print(sol[N - 2].d)
+    print(sol[N - 1].d)
+    print(sol[N - 1].dp)
+    print(sol[N - 1].Rp)
+
+    backward_substitution(N, sol)
+    for i in range(N):
+        print(sol[i].delta_y)
+        print(sol[i].delta_k)
+
+    delta_q = get_delta_q(size_y, size_z, size_p, m, N, sol)
+    print(delta_q)
+
+    y, z, p = recover_solution(size_y, size_z, size_p, m, N, rk, tspan0, q0)
+
+    '''
