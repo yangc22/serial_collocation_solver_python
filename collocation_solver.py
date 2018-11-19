@@ -4,6 +4,7 @@ import numpy as np
 import bvp_problem
 import math
 import matplotlib.pyplot as plt
+import time
 
 '''
     original MATLAB code sol(N).f_b is changed to sol[N - 1].f_N
@@ -19,29 +20,36 @@ import matplotlib.pyplot as plt
           z0 - initial estimate of DAE variables, N x nz matrix
           p - initial estimate of parameter variables, np vector
 '''
-def collocation_solver(y0, z0, p0, tspan, n_y, n_z, n_p):
-    size_y = n_y
-    size_z = n_z
-    size_p = n_p
-    N = len(tspan) # number of time nodes
+def collocation_solver(bvp_dae):
+    # bvp_dae = bvp_problem.bvp_dae()
+    size_y = bvp_dae.size_y
+    size_z = bvp_dae.size_z
+    size_p = bvp_dae.size_p
+    size_inequality = bvp_dae.size_inequality
+    N = bvp_dae.N # number of time nodes
+    tspan = bvp_dae.T0
+    y0 = bvp_dae.Y0
+    z0 = bvp_dae.Z0
+    p0 = bvp_dae.P0
     m = 3 # number of coloocation points
 
-    tol = 1e-6
-    max_iter = 500
+    tol = bvp_dae.tolerance
+    max_iter = bvp_dae.maximum_newton_iterations
+    max_mesh = bvp_dae.maximum_mesh_refinements
+    max_nodes = bvp_dae.maximum_nodes
+    min_nodes = 3
     max_linsearch = 20
-    nodes_min = 3
     alpha = 1 # coontinuation parameter
-    alpha_final = 1
+    if size_inequality > 0:
+        alpha_final = 1e-6
+    else:
+        alpha_final = 1
     beta = 0.8 # scale factor
 
-    rk = lobatto(m)
-    bvp_dae = bvp_problem.bvp_dae()
-
-    sol = form_initial_input(size_y, size_z, size_p, m, N, tspan, y0, z0, p0, alpha, rk, bvp_dae)
-
-    tspan0, q0 = struct_to_vec(size_y, size_z, size_p, m, N, sol)
-
     '''
+    rk = lobatto(m)
+    sol = form_initial_input(size_y, size_z, size_p, m, N, tspan, y0, z0, p0, alpha, rk, bvp_dae)
+    tspan0, q0 = struct_to_vec(size_y, size_z, size_p, m, N, sol)
     sol = vec_to_struct(size_y, size_z, size_p, m, N, rk, tspan0, q0)
     F, sol = F_q(bvp_dae, size_y, size_z, size_p, m, N, rk, tspan0, q0, alpha)
     # M = f_d_jacobian(bvp_dae, size_y, size_z, size_p, m, N, rk, tspan0, q0, alpha)
@@ -81,13 +89,17 @@ def collocation_solver(y0, z0, p0, tspan, n_y, n_z, n_p):
     y, z, p = recover_solution(size_y, size_z, size_p, m, N, rk, tspan0, q0)
 
     '''
-
+    start_time = time.time()
+    rk = lobatto(m)
+    sol = form_initial_input(size_y, size_z, size_p, m, N, tspan, y0, z0, p0, alpha, rk, bvp_dae)
+    tspan0, q0 = struct_to_vec(size_y, size_z, size_p, m, N, sol)
     for alphacal in range(max_iter):
         for iter_time in range(max_iter):
             F_q0, sol = F_q(bvp_dae, size_y, size_z, size_p, m, N, rk, tspan0, q0, alpha)
             norm_F_q0 = np.linalg.norm(F_q0, np.inf)
+            print("Newton iteration: ", iter_time, ", Residual: ", norm_F_q0)
             if (norm_F_q0 < tol):
-                print("solution found")
+                print("alpha = ", alpha, "Solution found")
                 break
             Jacobian_construct(bvp_dae, size_y, size_z, size_p, m, N, rk, alpha, sol)
             # M = f_d_jacobian(bvp_dae, size_y, size_z, size_p, m, N, rk, tspan0, q0, alpha)
@@ -98,9 +110,8 @@ def collocation_solver(y0, z0, p0, tspan, n_y, n_z, n_p):
             norm_delta_q0 = np.linalg.norm(delta_q0, np.inf)
 
             if (norm_delta_q0 < tol):
-                print("solution found")
+                print("alpha = ", alpha, "Solution found")
                 break
-            print("start lin search")
             # print(delta_q0)
             alpha0 = 1
             for i in range(max_linsearch):
@@ -111,10 +122,14 @@ def collocation_solver(y0, z0, p0, tspan, n_y, n_z, n_p):
                     q0 = q_new
                     break
                 alpha0 /= 2
-        print("final solution found")
+        print("alpha = ", alpha, "Number of nodes: ", N)
+        alpha *= beta
         if (alpha <= alpha_final):
+            print("Final solution found!")
             break
+    end_time = time.time()
     y0, z0, p = recover_solution(size_y, size_z, size_p, m, N, rk, tspan0, q0)
+    print("Elapsed time: ", end_time - start_time)
     plot_result(size_y, size_z, tspan0, y0, z0)
 
 
@@ -345,7 +360,7 @@ def Jacobian_construct(bvp_dae, size_y, size_z, size_p, m, N, rk, alpha, sol):
             r_y0[i][j] = Dr[i][j]
         for j in range(size_y):
             r_yM[i][j] = Dr[i][j + size_y]
-        for j in range(size_y):
+        for j in range(size_p):
             r_p0[i][j] = Dr[i][j + (size_y + size_y)]
     sol[0].set_B(r_y0)
     sol[N - 1].set_B(r_yM)
@@ -473,3 +488,7 @@ def plot_result(size_y, size_z, tspan, y, z):
                title='DAE variable')
         ax.grid()
         plt.show()
+
+if __name__ == '__main__':
+    bvp_dae = bvp_problem.bvp_dae()
+    collocation_solver(bvp_dae)

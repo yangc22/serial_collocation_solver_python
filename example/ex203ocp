@@ -15,7 +15,7 @@ CostFunctional          = (p + 18)*(1 + gamma*u*u);
 
 DifferentialEquations   = [(p + 18)*cos(theta), (p + 18)*sin(theta), (p + 18)*u];
 
-StateVariableInequalityConstraints = [10*cos(0.2*x) - 0.002*x*x*x*x*sin(x-1.25) - y];
+InequalityConstraints = [10*cos(0.2*x) - 0.002*x*x*x*x*sin(x-1.25) - y];
 
 Nodes                   = 101;
 Tolerance               = 1.0e-6;

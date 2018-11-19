@@ -165,11 +165,7 @@ class OCP(object):
         '''
             construct a BVP_DAE class
         '''
-        # header, import necessary packages and class header
-        bvp_dae_header = ''
-        bvp_dae_header += 'from math import *\n\n'
-        bvp_dae_header += 'class bvp_dae:\n'
-
+        
         # constant values defined in the OCP file
         constants = ''
         if o.constants:
@@ -299,11 +295,12 @@ class OCP(object):
         abvp_Dr += '\n'
         
         # main()
-        abvp_main = 'int main() {\n'
-        abvp_main += '\tint _ny = {0};\n'.format(len(y))
-        abvp_main += '\tint _nz = {0};\n'.format(len(z))
-        abvp_main += '\tint _np = {0};\n'.format(len(p))
-        abvp_main += '\tint _ninequality = {0};\n'.format(n_ineq)
+        abvp_main = '\tdef __init__(self) :\n'
+        abvp_main += '\t\tself.size_y = {0}\n'.format(len(y))
+        abvp_main += '\t\tself.size_z = {0}\n'.format(len(z))
+        abvp_main += '\t\tself.size_p = {0}\n'.format(len(p))
+        abvp_main += '\t\tself.size_inequality = {0}\n'.format(n_ineq)
+        '''
         abvp_main += '\tABVPDAE _bvp = ABVPDAENew(_ny, _nz, _np, _ninequality);\n'
         abvp_main += '\t_bvp->f = _abvp_f;\n'
         abvp_main += '\t_bvp->g = _abvp_g;\n'
@@ -313,11 +310,12 @@ class OCP(object):
         abvp_main += '\t_bvp->Dr = _abvp_Dr;\n'
         abvp_main += '\tMSHOOTDAE _m = MSHOOTDAENew();\n'
         abvp_main += '\t_m->bvp = _bvp;\n'
-        abvp_main += '\t_m->tolerance = {0};\n'.format(o.tolerance)
-        abvp_main += '\t_m->maximum_nodes = {0};\n'.format(o.maximum_nodes)
-        abvp_main += '\t_m->maximum_newton_iterations = {0};\n'.format(o.maximum_newton_iterations)
-        abvp_main += '\t_m->maximum_mesh_refinements = {0};\n'.format(o.maximum_mesh_refinements)
-        abvp_main += '\t_m->display = {0};\n'.format(o.display)
+        '''
+        abvp_main += '\t\tself.tolerance = {0}\n'.format(o.tolerance)
+        abvp_main += '\t\tself.maximum_nodes = {0}\n'.format(o.maximum_nodes)
+        abvp_main += '\t\tself.maximum_newton_iterations = {0}\n'.format(o.maximum_newton_iterations)
+        abvp_main += '\t\tself.maximum_mesh_refinements = {0}\n'.format(o.maximum_mesh_refinements)
+        # abvp_main += '\t_m->display = {0};\n'.format(o.display)
         if o.input_file != "":
             abvp_main += '\tMSHOOTDAEData _data = MSHOOTDAEReadData("{0}");\n'.format(o.input_file)
             abvp_main += '\tif (_data.error != 0) { RuntimeWarning("Unable to read input file"); ABVPDAEDelete(_bvp); MSHOOTDAEDelete(_m); return _data.error; }\n'
@@ -335,23 +333,52 @@ class OCP(object):
             if o.state_estimate or o.control_estimate or o.parameter_estimate:
                 abvp_main += '\t_solution_estimate(_T0, _Y0, _Z0, _P0);\n'
         else:
-            abvp_main += '\tint _N = {0};\n'.format(o.nodes)
-            abvp_main += '\tdouble _t_initial = {0};\n'.format(o.t_i)
-            abvp_main += '\tdouble _t_final = {0};\n'.format(o.t_f)
-            abvp_main += '\tVector _T0 = VectorLinspace(_t_initial, _t_final, _N);\n'
-            abvp_main += '\tMatrix _Y0 = MatrixNew(_N, _ny);\n'
-            abvp_main += '\tMatrix _Z0 = MatrixNew(_N, _nz);\n'
+            abvp_main += '\t\tself.N = {0}\n'.format(o.nodes)
+            abvp_main += '\t\tself.t_initial = {0}\n'.format(o.t_i)
+            abvp_main += '\t\tself.t_final = {0}\n'.format(o.t_f)
+            abvp_main += '\t\tself.T0 = np.linspace(self.t_initial, self.t_final, self.N)\n'
+            abvp_main += '\t\tself.Y0 = np.ones((self.N, self.size_y), dtype = np.float64)\n'
+            abvp_main += '\t\tself.Z0 = np.ones((self.N, self.size_z), dtype = np.float64)\n'
             if np > 0:
-                abvp_main += '\tVector _P0 = VectorNew(_np);\n'
+                abvp_main += '\t\tself.P0 = np.ones((self.size_p), dtype = np.float64)\n'
             else:
-                abvp_main += '\tVector _P0 = NULL;\n'
-            abvp_main += '\tMatrixSetAllTo(_Y0, 1.0);\n'
-            abvp_main += '\tMatrixSetAllTo(_Z0, 1.0);\n'
+                abvp_main += '\t\tself.P0 = np.ones((0), dtype = np.float64)\n'
+            '''
+            abvp_main += '\tMatrixSetAllTo(_Y0, 1.0)\n'
+            abvp_main += '\tMatrixSetAllTo(_Z0, 1.0)\n'
             if np > 0:
-                abvp_main += '\tVectorSetAllTo(_P0, 1.0);\n'
+                abvp_main += '\tVectorSetAllTo(_P0, 1.0)\n'
+            '''
             if o.state_estimate or o.control_estimate or o.parameter_estimate:
-                abvp_main += '\t_solution_estimate(_T0, _Y0, _Z0, _P0);\n'
+                abvp_main += '\t\tself._solution_estimate(self.T0, self.Y0, self.Z0, self.P0)\n'
+
+        # initial solution estimate
+        if o.state_estimate or o.control_estimate or o.parameter_estimate:
+            abvp_main += '\n'
+            abvp_main += '\tdef _solution_estimate(self, _T, _Y, _Z, _P):\n'
+            # abvp_header += '\tint i;\n'
+            # abvp_header += '\tdouble t;\n'
+            abvp_main += '\t\tN = _T.shape[0]\n'
+            abvp_main += '\t\tfor i in range(N):\n'
+            abvp_main += '\t\t\tt = _T[i];\n'
+            if o.state_estimate:
+                for j in range(len(o.state_estimate)):
+                    abvp_main += '\t\t\t_Y[i][{0}] = {1};\n'.format(j, o.state_estimate[j])
+            if o.control_estimate:
+                for j in range(len(o.control_estimate)):
+                    #abvp_header += '\t\t_Z->e[i][{0}] = {1};\n'.format(j, ccode(o.control_estimate[j]))
+                    abvp_main += '\t\t\t_Z[i][{0}] = {1};\n'.format(j, o.control_estimate[j])
+            #abvp_header += '\t\t}\n'
+            abvp_main += '\n'
+            abvp_main += '\t\tif (_P.shape[0] != 0):\n'
+            abvp_main += '\t\t\tfor i in range(self.size_p):\n'
+            if o.parameter_estimate:
+                for j in range(len(o.parameter_estimate)):
+                    abvp_main += '\t\t\t\t_P[{0}] = {1};\n'.format(j, o.parameter_estimate[j])
+            else:
+                abvp_main += '\t\t\t\t_P0 = np.ones((self.size_p), dtype = np.float64)\n'
         
+        '''
         abvp_main += '\tint _err = MSHOOTDAESolve(_m, _T0, _Y0, _Z0, _P0);\n'
         abvp_main += '\tprintf("MSHOOTDAESolve exit code: %d\\n", _err);\n'
         abvp_main += '\t_err = MSHOOTDAEWriteData(_m, "{0}");\n'.format(o.output_file)
@@ -359,9 +386,15 @@ class OCP(object):
         if np > 0:
             abvp_main += '\tVectorDelete(_P0);\n'
         abvp_main += '\treturn _err;\n}\n'
-        
         '''
-        abvp_header = '// Created by OCP.py\n'
+        
+        # header, import necessary packages and class header
+        abvp_header = '# Created by OCP.py\n'
+        abvp_header += 'from math import *\n'
+        abvp_header += 'import numpy as np\n\n'
+        abvp_header += 'class bvp_dae:\n'
+
+        '''
         abvp_header += '#include <stdio.h>\n'
         abvp_header += '#include <float.h>\n'
         abvp_header += '#include <math.h>\n'
@@ -376,6 +409,7 @@ class OCP(object):
         abvp_header += '#include "newtonsmethod.h"\n'
         abvp_header += '#include "abvpdae.h"\n'
         abvp_header += '#include "mshootdae.h"\n\n'
+
         abvp_header += 'double _rho_ = 1.0e3;\n\n'
         abvp_header += 'double _mu_ = 1.0e-1;\n\n'
         if o.constants:
@@ -438,8 +472,8 @@ class OCP(object):
             abvp_header += '\t}\n'
             abvp_header += '}\n'
         '''
-        # print (abvp_header)
-        print (bvp_dae_header)
+        print (abvp_header)
+        print (abvp_main)
         print (abvp_f)
         print (abvp_g)
         print (abvp_r)

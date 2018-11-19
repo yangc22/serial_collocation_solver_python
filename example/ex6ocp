@@ -1,0 +1,32 @@
+# Jacobson, D. H. and Lele, M. M.,
+# A transformation technique for optimal control problems with state variable
+# inequality constraints, IEEE Trans. AC, Vol. 14, pp. 457--460, 1969.
+
+StateVariables          = [x1, x2, x3];
+ControlVariables        = [u];
+
+InitialConstraints      = [x1,
+                           x2 + 1.0,
+                           x3];
+
+CostFunctional          = x1*x1 + x2*x2 + 0.005*u*u;
+
+DifferentialEquations   = [x2,
+                          -x2 + u,
+                          1.0];
+
+InequalityConstraints   = [u - 20.0,
+                           -20.0 - u,
+			   -(8.0*(x3-0.5)*(x3-0.5)-0.5-x2)];
+
+# StateVariableInequalityConstraints = [-(8.0*(x3-0.5)*(x3-0.5)-0.5-x2)];
+
+StateEstimate           = [-0.25*t, -1 + t, t];
+ControlEstimate         = [14 - 14*t];
+
+Nodes                   = 101;
+Tolerance               = 1.0e-6;
+OutputFile              = "ex6.data";
+Display                 = NO;
+MaximumMeshRefinements  = 20;
+MaximumNodes            = 2000;
