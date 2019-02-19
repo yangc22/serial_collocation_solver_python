@@ -1,5 +1,6 @@
 # Created by OCP.py
 from math import *
+from BVPDAEReadWriteData import BVPDAEReadData, BVPDAEWriteData
 import numpy as np
 
 class bvp_dae:
@@ -13,16 +14,40 @@ class bvp_dae:
 		self.maximum_nodes = 1000
 		self.maximum_newton_iterations = 200
 		self.maximum_mesh_refinements = 10
-		MSHOOTDAEData _data = MSHOOTDAEReadData("ex7a.data");
-		if (_data.error != 0) { RuntimeWarning("Unable to read input file"); ABVPDAEDelete(_bvp); MSHOOTDAEDelete(_m); return _data.error; }
-		Vector _T0 = _data.T;
-		Matrix _Y0 = NULL; if (_ny > 0) { _Y0 = MatrixNew(_T0->r, _ny); MatrixSetAllTo(_Y0, 1.0); }
-		Matrix _Z0 = NULL; if (_nz > 0) { _Z0 = MatrixNew(_T0->r, _nz); MatrixSetAllTo(_Z0, 10.0); }
-		Vector _P0 = NULL; if (_np > 0) { _P0 = VectorNew(_np); VectorSetAllTo(_P0, 10.0); }
-		_pack_YZP(_Y0, _Z0, _P0, _data);
-		if (_data.Y != NULL) MatrixDelete(_data.Y);
-		if (_data.Z != NULL) MatrixDelete(_data.Z);
-		if (_data.P != NULL) VectorDelete(_data.P);
+		error, t0, y0, z0, p0 = BVPDAEReadData("ex7a.data")
+		if (error != 0):
+			print("Unable to read input file!")
+		self.N = t0.shape[0]
+		self.T0 = t0
+		self.Y0 = None
+		if (self.size_y > 0):
+			self.Y0 = np.ones((self.N, self.size_y), dtype = np.float64)
+		self.Z0 = None
+		if (self.size_z > 0):
+			self.P0 = np.ones((self.N, self.size_z), dtype = np.float64)
+		self.P0 = None
+		if (self.size_p > 0):
+			self.P0 = np.ones((self.size_p), dtype = np.float64)
+		_pack_YZP(self.Y0, self.Z0, self.P0, y0, z0, p0);
+
+	def _pack_YZP(self, _Y, _Z, _P, y0, z0, p0):
+		if (_Y != None) and (y0 != None):
+			_n = y0.shape[0] if y0.shape[0] < _Y.shape[0] else _Y.shape[0]
+			_m = y0.shape[1] if y0.shape[1] < _Y.shape[1] else _Y.shape[1]
+			for i in range(_n):
+				for j in range(_m):
+					_Y[i][j] = y0[i][j]
+		if (_Z != None) and (z0 != None):
+			_n = z0.shape[0] if z0.shape[0] < _Z.shape[0] else _Z.shape[0]
+			# only read in enough dtat to fill the controls
+			_m = z0.shape[1] if z0.shape[1] < 1 else 1
+			for i in range(_n):
+				for j in range(_m):
+					_Z[i][j] = z0[i][j]
+		if (_P != None) and (p0 != None):
+			_n = p0.shape[0] if p0.shape[0] < _P.shape[0] else _P.shape[0]
+			for i in range(_n):
+				_P[i] = p0[i]
 
 	def _abvp_f(self, _y, _z, _p, _f):
 		x1 = _y[0]

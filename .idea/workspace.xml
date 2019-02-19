@@ -3,10 +3,6 @@
   <component name="ChangeListManager">
     <list default="true" id="c28ff260-11a4-487e-a9ac-710efa02f7ff" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/OCP2ABVP.py" beforeDir="false" afterPath="$PROJECT_DIR$/OCP2ABVP.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bvp_problem.py" beforeDir="false" afterPath="$PROJECT_DIR$/bvp_problem.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/collocation_solver.py" beforeDir="false" afterPath="$PROJECT_DIR$/collocation_solver.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/example/ex8ocp" beforeDir="false" afterPath="$PROJECT_DIR$/example/ex8ocp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test_collocation.py" beforeDir="false" afterPath="$PROJECT_DIR$/test_collocation.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -16,11 +12,11 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/test_collocation.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="405">
-              <caret line="27" column="10" lean-forward="true" selection-start-line="27" selection-start-column="10" selection-end-line="27" selection-end-column="10" />
+            <state relative-caret-position="266">
+              <caret line="33" selection-start-line="33" selection-end-line="33" />
               <folding>
                 <element signature="e#0#32#0" expanded="true" />
               </folding>
@@ -31,8 +27,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/bvp_problem.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-1802">
-              <caret line="10" column="23" lean-forward="true" selection-start-line="10" selection-start-column="23" selection-end-line="10" selection-end-column="23" />
+            <state relative-caret-position="135">
+              <caret line="10" column="23" selection-start-line="10" selection-start-column="23" selection-end-line="10" selection-end-column="23" />
               <folding>
                 <element signature="e#20#38#0" expanded="true" />
               </folding>
@@ -43,17 +39,17 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/OCP2ABVP.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1902">
-              <caret line="305" column="45" lean-forward="true" selection-start-line="305" selection-start-column="45" selection-end-line="305" selection-end-column="45" />
+            <state relative-caret-position="4545">
+              <caret line="305" column="45" selection-start-line="305" selection-start-column="45" selection-end-line="305" selection-end-column="45" />
             </state>
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/collocation_solver.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1">
-              <caret line="497" column="4" selection-start-line="497" selection-start-column="4" selection-end-line="497" selection-end-column="4" />
+            <state relative-caret-position="186">
+              <caret line="35" selection-start-line="35" selection-end-line="35" />
             </state>
           </provider>
         </entry>
@@ -90,6 +86,7 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
+      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -101,7 +98,6 @@
           <select />
         </subPane>
       </pane>
-      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -257,7 +253,6 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="20" y="43" width="1400" height="788" extended-state="0" />
-    <editor active="true" />
     <layout>
       <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.24945612" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
@@ -280,6 +275,13 @@
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/test_collocation.py</url>
+          <line>33</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+      </breakpoints>
       <default-breakpoints>
         <breakpoint type="python-exception">
           <properties notifyOnTerminate="true" exception="BaseException">
@@ -302,11 +304,7 @@
     <entry file="file://$PROJECT_DIR$/ex4.py">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
-    <entry file="file://$PROJECT_DIR$/ex2.outpu">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-84" />
-      </provider>
-    </entry>
+    <entry file="file://$PROJECT_DIR$/ex2.outpu" />
     <entry file="file://$PROJECT_DIR$/collocation_coefficients.py">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
@@ -317,37 +315,37 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/OCP2ABVP.py">
+    <entry file="file://$PROJECT_DIR$/test_collocation.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1902">
-          <caret line="305" column="45" lean-forward="true" selection-start-line="305" selection-start-column="45" selection-end-line="305" selection-end-column="45" />
+        <state relative-caret-position="266">
+          <caret line="33" selection-start-line="33" selection-end-line="33" />
+          <folding>
+            <element signature="e#0#32#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/bvp_problem.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-1802">
-          <caret line="10" column="23" lean-forward="true" selection-start-line="10" selection-start-column="23" selection-end-line="10" selection-end-column="23" />
+        <state relative-caret-position="135">
+          <caret line="10" column="23" selection-start-line="10" selection-start-column="23" selection-end-line="10" selection-end-column="23" />
           <folding>
             <element signature="e#20#38#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/collocation_solver.py">
+    <entry file="file://$PROJECT_DIR$/OCP2ABVP.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1">
-          <caret line="497" column="4" selection-start-line="497" selection-start-column="4" selection-end-line="497" selection-end-column="4" />
+        <state relative-caret-position="4545">
+          <caret line="305" column="45" selection-start-line="305" selection-start-column="45" selection-end-line="305" selection-end-column="45" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/test_collocation.py">
+    <entry file="file://$PROJECT_DIR$/collocation_solver.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="405">
-          <caret line="27" column="10" lean-forward="true" selection-start-line="27" selection-start-column="10" selection-end-line="27" selection-end-column="10" />
-          <folding>
-            <element signature="e#0#32#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="186">
+          <caret line="35" selection-start-line="35" selection-end-line="35" />
         </state>
       </provider>
     </entry>

@@ -339,15 +339,16 @@ class OCP(object):
             abvp_main += '\t\t\tprint("Unable to read input file!")\n'
             abvp_main += '\t\tself.N = t0.shape[0]\n'
             abvp_main += '\t\tself.T0 = t0\n'
-            abvp_main += '\t\tself.Y0 = np.ones((self.N, self.size_y), dtype = np.float64)\n'
-            abvp_main += '\t\tif (self.size_y > 0)\n:'
-            abvp_main += '\t\t\t_Y0[1 : self.N] = MatrixNew(_T0->r, _ny); MatrixSetAllTo(_Y0, 1.0); }\n'
-            abvp_main += '\t\tself.Z0 = NULL; if (_nz > 0) { _Z0 = MatrixNew(_T0->r, _nz); MatrixSetAllTo(_Z0, 10.0); }\n'
-            abvp_main += '\t\tself.P0 = NULL; if (_np > 0) { _P0 = VectorNew(_np); VectorSetAllTo(_P0, 10.0); }\n'
-            abvp_main += '\t\t_pack_YZP(_Y0, _Z0, _P0, _data);\n'
-            abvp_main += '\t\tif (_data.Y != NULL) MatrixDelete(_data.Y);\n'
-            abvp_main += '\t\tif (_data.Z != NULL) MatrixDelete(_data.Z);\n'
-            abvp_main += '\t\tif (_data.P != NULL) VectorDelete(_data.P);\n'
+            abvp_main += '\t\tself.Y0 = None\n'
+            abvp_main += '\t\tif (self.size_y > 0):\n'
+            abvp_main += '\t\t\tself.Y0 = np.ones((self.N, self.size_y), dtype = np.float64)\n'
+            abvp_main += '\t\tself.Z0 = None\n'
+            abvp_main += '\t\tif (self.size_z > 0):\n'
+            abvp_main += '\t\t\tself.P0 = np.ones((self.N, self.size_z), dtype = np.float64)\n'
+            abvp_main += '\t\tself.P0 = None\n'
+            abvp_main += '\t\tif (self.size_p > 0):\n'
+            abvp_main += '\t\t\tself.P0 = np.ones((self.size_p), dtype = np.float64)\n'
+            abvp_main += '\t\t_pack_YZP(self.Y0, self.Z0, self.P0, y0, z0, p0);\n'
             if o.state_estimate or o.control_estimate or o.parameter_estimate:
                 abvp_main += '\t\tself._solution_estimate(_T0, _Y0, _Z0, _P0);\n'
         else:
@@ -370,6 +371,27 @@ class OCP(object):
             if o.state_estimate or o.control_estimate or o.parameter_estimate:
                 abvp_main += '\t\tself._solution_estimate(self.T0, self.Y0, self.Z0, self.P0)\n'
 
+        # pack data from the input file
+        if o.input_file != "":
+            abvp_main += '\n'
+            abvp_main += '\tdef _pack_YZP(self, _Y, _Z, _P, y0, z0, p0):\n'
+            abvp_main += '\t\tif (_Y != None) and (y0 != None):\n'
+            abvp_main += '\t\t\t_n = y0.shape[0] if y0.shape[0] < _Y.shape[0] else _Y.shape[0]\n'
+            abvp_main += '\t\t\t_m = y0.shape[1] if y0.shape[1] < _Y.shape[1] else _Y.shape[1]\n'
+            abvp_main += '\t\t\tfor i in range(_n):\n'
+            abvp_main += '\t\t\t\tfor j in range(_m):\n'
+            abvp_main += '\t\t\t\t\t_Y[i][j] = y0[i][j]\n'
+            abvp_main += '\t\tif (_Z != None) and (z0 != None):\n'
+            abvp_main += '\t\t\t_n = z0.shape[0] if z0.shape[0] < _Z.shape[0] else _Z.shape[0]\n'
+            abvp_main += '\t\t\t# only read in enough dtat to fill the controls\n'
+            abvp_main += '\t\t\t_m = z0.shape[1] if z0.shape[1] < {0} else {1}\n'.format(len(o.u), len(o.u))
+            abvp_main += '\t\t\tfor i in range(_n):\n'
+            abvp_main += '\t\t\t\tfor j in range(_m):\n'
+            abvp_main += '\t\t\t\t\t_Z[i][j] = z0[i][j]\n'
+            abvp_main += '\t\tif (_P != None) and (p0 != None):\n'
+            abvp_main += '\t\t\t_n = p0.shape[0] if p0.shape[0] < _P.shape[0] else _P.shape[0]\n'
+            abvp_main += '\t\t\tfor i in range(_n):\n'
+            abvp_main += '\t\t\t\t_P[i] = p0[i]\n'
         # initial solution estimate
         if o.state_estimate or o.control_estimate or o.parameter_estimate:
             abvp_main += '\n'
