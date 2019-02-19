@@ -27,7 +27,7 @@ ControlEstimate			= [0.01];
 InitialTime				= 0.0;
 FinalTime				= 0.78;
 
-Nodes					= 1001;
+Nodes					= 101;
 Tolerance				= 1.0e-6;
 OutputFile				= "ex8.data";
 Display					= YES;

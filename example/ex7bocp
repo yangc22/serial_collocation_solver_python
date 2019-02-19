@@ -1,0 +1,23 @@
+# Kirk, D. E., Optimal Control Theory: An Introduction,
+# Prentice-Hall, 1970.
+
+StateVariables 			= [x1, x2];
+ControlVariables 		= [u1];
+InitialConstraints 		= [x1-0.05, x2];
+TerminalConstraints		= [x1, x2];
+CostFunctional 			= 0.5*(x1*x1 + x2*x2 + 0.1*u1*u1);
+
+DifferentialEquations 	= [-2.0*(x1 + 0.25) + (x2 + 0.5)*exp(25.0*x1/(x1 + 2.0)) - (x1 + 0.25)*u1, 0.5 - x2 - (x2 + 0.5)*exp(25.0*x1/(x1 + 2.0))];
+
+#StateEstimate			= [0.05 - 0.09*t/0.78, -t*(0.78-t)];
+#ControlEstimate			= [1 - t/0.78];
+
+InitialTime				= 0.0;
+FinalTime				= 0.78;
+Nodes					= 79;
+
+Tolerance				= 1.0e-6;
+InputFile				= "ex7a.data";
+OutputFile				= "ex7b.data";
+Display					= NO;
+

@@ -295,7 +295,7 @@ class OCP(object):
         abvp_Dr += '\n'
         
         # main()
-        abvp_main = '\tdef __init__(self) :\n'
+        abvp_main = '\tdef __init__(self):\n'
         abvp_main += '\t\tself.size_y = {0}\n'.format(len(y))
         abvp_main += '\t\tself.size_z = {0}\n'.format(len(z))
         abvp_main += '\t\tself.size_p = {0}\n'.format(len(p))
@@ -317,6 +317,7 @@ class OCP(object):
         abvp_main += '\t\tself.maximum_mesh_refinements = {0}\n'.format(o.maximum_mesh_refinements)
         # abvp_main += '\t_m->display = {0};\n'.format(o.display)
         if o.input_file != "":
+            '''
             abvp_main += '\t\tMSHOOTDAEData _data = MSHOOTDAEReadData("{0}");\n'.format(o.input_file)
             abvp_main += '\t\tif (_data.error != 0) { RuntimeWarning("Unable to read input file"); ABVPDAEDelete(_bvp); MSHOOTDAEDelete(_m); return _data.error; }\n'
             abvp_main += '\t\tVector _T0 = _data.T;\n'
@@ -326,6 +327,23 @@ class OCP(object):
             abvp_main += '\t\tMatrix _Y0 = NULL; if (_ny > 0) { _Y0 = MatrixNew(_T0->r, _ny); MatrixSetAllTo(_Y0, 1.0); }\n'
             abvp_main += '\t\tMatrix _Z0 = NULL; if (_nz > 0) { _Z0 = MatrixNew(_T0->r, _nz); MatrixSetAllTo(_Z0, 10.0); }\n'
             abvp_main += '\t\tVector _P0 = NULL; if (_np > 0) { _P0 = VectorNew(_np); VectorSetAllTo(_P0, 10.0); }\n'
+            abvp_main += '\t\t_pack_YZP(_Y0, _Z0, _P0, _data);\n'
+            abvp_main += '\t\tif (_data.Y != NULL) MatrixDelete(_data.Y);\n'
+            abvp_main += '\t\tif (_data.Z != NULL) MatrixDelete(_data.Z);\n'
+            abvp_main += '\t\tif (_data.P != NULL) VectorDelete(_data.P);\n'
+            if o.state_estimate or o.control_estimate or o.parameter_estimate:
+                abvp_main += '\t\tself._solution_estimate(_T0, _Y0, _Z0, _P0);\n'
+            '''
+            abvp_main += '\t\terror, t0, y0, z0, p0 = BVPDAEReadData("{0}")\n'.format(o.input_file)
+            abvp_main += '\t\tif (error != 0):\n'
+            abvp_main += '\t\t\tprint("Unable to read input file!")\n'
+            abvp_main += '\t\tself.N = t0.shape[0]\n'
+            abvp_main += '\t\tself.T0 = t0\n'
+            abvp_main += '\t\tself.Y0 = np.ones((self.N, self.size_y), dtype = np.float64)\n'
+            abvp_main += '\t\tif (self.size_y > 0)\n:'
+            abvp_main += '\t\t\t_Y0[1 : self.N] = MatrixNew(_T0->r, _ny); MatrixSetAllTo(_Y0, 1.0); }\n'
+            abvp_main += '\t\tself.Z0 = NULL; if (_nz > 0) { _Z0 = MatrixNew(_T0->r, _nz); MatrixSetAllTo(_Z0, 10.0); }\n'
+            abvp_main += '\t\tself.P0 = NULL; if (_np > 0) { _P0 = VectorNew(_np); VectorSetAllTo(_P0, 10.0); }\n'
             abvp_main += '\t\t_pack_YZP(_Y0, _Z0, _P0, _data);\n'
             abvp_main += '\t\tif (_data.Y != NULL) MatrixDelete(_data.Y);\n'
             abvp_main += '\t\tif (_data.Z != NULL) MatrixDelete(_data.Z);\n'
@@ -391,6 +409,7 @@ class OCP(object):
         # header, import necessary packages and class header
         abvp_header = '# Created by OCP.py\n'
         abvp_header += 'from math import *\n'
+        abvp_header += 'from BVPDAEReadWriteData import BVPDAEReadData, BVPDAEWriteData\n'
         abvp_header += 'import numpy as np\n\n'
         abvp_header += 'class bvp_dae:\n'
 
