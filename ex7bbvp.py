@@ -32,13 +32,13 @@ class bvp_dae:
 
 	def _pack_YZP(self, _Y, _Z, _P, y0, z0, p0):
 		if (_Y != None) and (y0 != None):
-			_n = y0.shape[0] if y0.shape[0] < _Y.shape[0] else _Y.shape[0]
+			_n = self.N
 			_m = y0.shape[1] if y0.shape[1] < _Y.shape[1] else _Y.shape[1]
 			for i in range(_n):
 				for j in range(_m):
 					_Y[i][j] = y0[i][j]
 		if (_Z != None) and (z0 != None):
-			_n = z0.shape[0] if z0.shape[0] < _Z.shape[0] else _Z.shape[0]
+			_n = self.N
 			# only read in enough dtat to fill the controls
 			_m = z0.shape[1] if z0.shape[1] < 1 else 1
 			for i in range(_n):

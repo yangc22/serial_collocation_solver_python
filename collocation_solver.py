@@ -50,7 +50,7 @@ def collocation_solver(bvp_dae):
 
     start_time = time.time()
     rk = lobatto(m)
-    sol = form_initial_input(size_y, size_z, size_p, m, N, tspan, y0, z0, p0, alpha, rk, bvp_dae)
+    sol = form_initial_input(bvp_dae, size_y, size_z, size_p, m, N, tspan, y0, z0, p0, alpha, rk)
     tspan0, q0 = struct_to_vec(size_y, size_z, size_p, m, N, sol)
     for alphacal in range(max_iter):
         for iter_time in range(max_iter):
@@ -97,7 +97,7 @@ def collocation_solver(bvp_dae):
 '''
 
 
-def form_initial_input(size_y, size_z, size_p, m, N, tspan, y0, z0, p0, alpha, rk, bvp_dae):
+def form_initial_input(bvp_dae, size_y, size_z, size_p, m, N, tspan, y0, z0, p0, alpha, rk):
     sol = []
     c = rk.c
     for i in range(N - 1):
@@ -468,6 +468,76 @@ def plot_result(size_y, size_z, tspan, y, z):
                title='DAE variable')
         ax.grid()
         plt.show()
+
+# Compute segment residual at each node
+def compute_segment_residual(bvp_dae, rk, size_y, size_z, size_p, m, N, alpha, tol, sol):
+
+    def get_ydot(j, t):
+        # ydot = sum_{k=1,m} L_k(t) * ydot_jk
+        ydot = np.zeros((size_y), dtype = np.float64)
+        for k in range(m):
+            ydot += rk.L(t)[k] * sol[j].y_Dot[0 : size_y, k]
+        return ydot
+
+    def get_z(j, t):
+        # z = sum_{k=1,m} L_k(t) * z_jk
+        z = zeros((size_z), dtype = np.float64)
+        for k in range(m):
+            z += rk.L(t)[k] * sol[j].z_Tilda[0 : size_z, k]
+        return z
+        
+    def get_y(j, t):
+        # y = sy + delta*sum_{k=1,m} I_k(t) * ydot_jk
+        y = sol[j].y
+        delta_t = sol[j].delta_t
+        for k in range(m):
+            y += delta_t * rk.I(t)[k] * sol[j].y_Dot[0 : size_y, k]
+        return y
+
+    if size_p > 0:
+        p = sol[N].p;
+
+
+    residual = zeros(N, 1);
+    max_rho_h = 0;
+    max_rho_g = 0;
+    max_rho_r = 0;
+    [tau, w] = gauss_coeff(m + 1);
+    for j = 1 : N - 1
+        delta = sol(j).delta_t;
+        rho_h = 0;
+        rho_g = 0;
+        for i = 1 : m + 1
+            t = tau(i);
+            ydot = get_ydot(j, t); 
+            y = get_y(j, t);
+            if nz > 0
+                z = get_z(j, t);
+            end
+            h_res = ODE_h(y, z, p, alpha);
+            % h(y,z,p) - ydot
+            h_res = h_res - ydot;
+            rho_h = rho_h + dot(h_res, h_res) * w(i);
+            if nz > 0
+                g_res = DAE_g(y, z, p, alpha);
+                rho_g = rho_g + dot(g_res, g_res) * w(i);
+            end
+        end
+        
+        residual(j) = sqrt(delta * (rho_h + rho_g)) / tol;
+        
+        max_rho_h = max(max_rho_h, sqrt(delta * rho_h));
+        max_rho_g = max(max_rho_g, sqrt(delta * rho_g));
+    end
+
+    if (ny+np) > 0
+        r = boundary_constraint(sol(1).y(1 : ny), sol(N).y(1 : ny), p);
+        max_rho_r = norm(r);
+        residual(N) = max_rho_r / tol;
+    end
+    fprintf(1, "res: |h|: %e, |g|: %e, |r|: %e\n", max_rho_h, max_rho_g, max_rho_r);
+    end
+
 
 
 if __name__ == '__main__':
