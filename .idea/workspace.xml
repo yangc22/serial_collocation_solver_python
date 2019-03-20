@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="c28ff260-11a4-487e-a9ac-710efa02f7ff" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/OCP2ABVP.py" beforeDir="false" afterPath="$PROJECT_DIR$/OCP2ABVP.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/collocation_solver.py" beforeDir="false" afterPath="$PROJECT_DIR$/collocation_solver.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -15,7 +15,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/test_collocation.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="266">
+            <state relative-caret-position="465">
               <caret line="33" selection-start-line="33" selection-end-line="33" />
               <folding>
                 <element signature="e#0#32#0" expanded="true" />
@@ -253,6 +253,7 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="20" y="43" width="1400" height="788" extended-state="0" />
+    <editor active="true" />
     <layout>
       <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.24945612" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
@@ -317,7 +318,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/test_collocation.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="266">
+        <state relative-caret-position="465">
           <caret line="33" selection-start-line="33" selection-end-line="33" />
           <folding>
             <element signature="e#0#32#0" expanded="true" />

@@ -495,50 +495,247 @@ def compute_segment_residual(bvp_dae, rk, size_y, size_z, size_p, m, N, alpha, t
         return y
 
     if size_p > 0:
-        p = sol[N].p;
+        p = sol[N].p
 
-
-    residual = zeros(N, 1);
-    max_rho_h = 0;
-    max_rho_g = 0;
-    max_rho_r = 0;
-    [tau, w] = gauss_coeff(m + 1);
-    for j = 1 : N - 1
-        delta = sol(j).delta_t;
-        rho_h = 0;
-        rho_g = 0;
-        for i = 1 : m + 1
-            t = tau(i);
-            ydot = get_ydot(j, t); 
-            y = get_y(j, t);
-            if nz > 0
-                z = get_z(j, t);
-            end
-            h_res = ODE_h(y, z, p, alpha);
-            % h(y,z,p) - ydot
-            h_res = h_res - ydot;
-            rho_h = rho_h + dot(h_res, h_res) * w(i);
-            if nz > 0
-                g_res = DAE_g(y, z, p, alpha);
-                rho_g = rho_g + dot(g_res, g_res) * w(i);
-            end
-        end
+    residual = np.zeros((N), dtype = np.float64)
+    max_rho_h = 0
+    max_rho_g = 0
+    max_rho_r = 0
+    [tau, w] = gauss_coeff(m + 1)
+    for j in range(N - 1):
+        delta = sol[j].delta_t
+        rho_h = 0
+        rho_g = 0
+        for i in range(m + 1):
+            t = tau[i]
+            ydot = get_ydot(j, t)
+            y = get_y(j, t)
+            if size_z > 0:
+                z = get_z(j, t)
+            h_res = np.zeros((size_y), dtype = np.float64)
+            bvp_dae._abvp_f(y, z, p, h_res)
+            # h(y,z,p) - ydot
+            h_res -= ydot
+            rho_h += np.dot(h_res, h_res) * w[i]
+            if size_z > 0:
+                g_res = np.zeros((size_z), dtype = np.float64)
+                _abvp_g(y, z, p, alpha, g_res)
+                rho_g += dot(g_res, g_res) * w[i]
         
-        residual(j) = sqrt(delta * (rho_h + rho_g)) / tol;
+        residual[j] = math.sqrt(delta * (rho_h + rho_g)) / tol
         
-        max_rho_h = max(max_rho_h, sqrt(delta * rho_h));
-        max_rho_g = max(max_rho_g, sqrt(delta * rho_g));
-    end
+        max_rho_h = max(max_rho_h, math.sqrt(delta * rho_h))
+        max_rho_g = max(max_rho_g, math.sqrt(delta * rho_g))
 
-    if (ny+np) > 0
-        r = boundary_constraint(sol(1).y(1 : ny), sol(N).y(1 : ny), p);
-        max_rho_r = norm(r);
-        residual(N) = max_rho_r / tol;
-    end
-    fprintf(1, "res: |h|: %e, |g|: %e, |r|: %e\n", max_rho_h, max_rho_g, max_rho_r);
-    end
+    if (size_y + size_p) > 0:
+        r = np.zeros((size_y + size_p), dtype = np.float64)
+        _abvp_r(sol[0].y, sol[N - 1].y, p, r)
+        max_rho_r = np.linalg.norm(r, np.inf)
+        residual[N] = max_rho_r / tol
+    print('{}{}{}{}{}{}\n'.format('res: |h|: ', max_rho_h, ', |g|: ', max_rho_g, ', |r|: ', max_rho_r))
+    return residual
 
+# Remesh the problem
+# def [tspan, y0, z0] = remesh(tspan, y0, z0, residual)
+def remesh(size_y, size_z, N, m, tspan, y0, z0, residual):
+    N_Temp = 0
+    tspan_Temp = []
+    y0_Temp = []
+    z0_Temp = []
+    residual_Temp = []
 
+    # Deleting Nodes
+    i = 0
+    # Record the number of the deleted nodes
+    kD = 0  
+
+    thresholdDel = 1e-2
+    while i < N - 4:
+        res_i = residual[i]
+        if (res_i <= thresholdDel):
+            res_i_Plus1 = residual[i + 1]
+            res_i_Plus2 = residual[i + 2]
+            res_i_Plus3 = residual[i + 3]
+            res_i_Plus4 = residual[i + 4]
+            if ((res_i_Plus1 <= thresholdDel) and (res_i_Plus2 <= thresholdDel) and (res_i_Plus3 <= thresholdDel) and (res_i_Plus4 <= thresholdDel)):
+                # append the 1st, 3rd, and 5th node
+                # 1st node
+                tspan_Temp.appned(tspan[i])
+                y0_Temp.append(y0[i, :])
+                z0_Temp.append(z0[i, :])
+                residual_Temp.append(residual[i])
+                # 3rd node
+                tspan_Temp.appned(tspan[i + 2])
+                y0_Temp.append(y0[i + 2, :])
+                z0_Temp.append(z0[i + 2, :])
+                residual_Temp.append(residual[i + 2])
+                # 5th node
+                tspan_Temp.appned(tspan[i + 4])
+                y0_Temp.append(y0[i + 4, :])
+                z0_Temp.append(z0[i + 4, :])
+                residual_Temp.append(residual[i + 4])
+                # delete 2 nodes
+                kD += 2
+                # add 3 nodes to the total number
+                N_Temp += 3
+                # ignore those five nodes
+                i += 5
+            else:
+                # directly add the node
+                tspan_Temp.appned(tspan[i])
+                y0_Temp.append(y0[i, :])
+                z0_Temp.append(z0[i, :])
+                residual_Temp.append(residual[i])
+                N_Temp += 1
+                i += 1
+        else:
+            # directly add the node
+            tspan_Temp.appned(tspan[i])
+            y0_Temp.append(y0[i, :])
+            z0_Temp.append(z0[i, :])
+            residual_Temp.append(residual[i])
+            N_Temp += 1
+            i += 1 
+    '''
+        if the previous loop stop at the (N - 4)th node, those last
+        four nodes should be added manually
+        if the last five nodes have already been processed, the index i
+        should be equal to N, then nothing needs to be done
+    '''
+    if (i == N - 4):
+        '''
+            add the last 4 nodes starting from i = N - 4 to N - 1, which
+            is a total of 4 nodes
+        '''
+        for j in range(4):
+            # append the N - 4 + j node
+            tspan_Temp.appned(tspan[N - 4 + j])
+            y0_Temp.append(y0[N - 4 + j, :])
+            z0_Temp.append(z0[N - 4 + j, :])
+            residual_Temp.append(residual[N - 4 + j])
+    # convert from list to numpy arrays for the convenience of indexing
+    tspan_Temp = np.array(tspan_Temp)
+    y0_Temp = np.array(y0_Temp)
+    z0_Temp = np.array(z0_Temp)
+    residual_Temp = np.array(residual_Temp)
+    # lists to hold the outputs
+    N_New = 0
+    tspan_New = []
+    y0_New = []
+    z0_New = []
+    residual_New = []
+    # Adding Nodes
+    i = 0
+    # Record the number of the added nodes
+    kA = 0
+
+    while i < N_Temp - 1:
+        res_i = residual_Temp[i]
+        if (res_i > 1):
+            if (res_i > 100):
+                # add three uniformly spaced nodes
+                # add the time point of new nodes
+                delta_t = (tspan_Temp[i + 1] - tspan_Temp[i]) / 4
+                t_i = tspan_Temp[i]
+                t_i_Plus1 = t_i + delta_t
+                t_i_Plus2 = t_i + 2 * delta_t
+                t_i_Plus3 = t_i + 3 * delta_t
+                tspan_New.append(t_i)
+                tspan_New.append(t_i_Plus1)
+                tspan_New.append(t_i_Plus2)
+                tspan_New.append(t_i_Plus3)
+                # add the residuals of the new nodes
+                delta_res = (residual_Temp[i + 1] - residual_Temp[i]) / 4
+                res_i_Plus1 = res_i + delta_res
+                res_i_Plus2 = res_i + 2 * delta_res
+                res_i_Plus3 = res_i + 3 * delta_res
+                residual_New.append(res_i)
+                residual_New.append(res_i_Plus1)
+                residual_New.append(res_i_Plus2)
+                residual_New.append(res_i_Plus3)
+                # add the ys of the new nodes
+                y0_i = y0_Temp[i, :]
+                y0_i_Next = y0_Temp[i + 1, :]
+                delta_y0 = (y0_i_Next - y0_i) / 4
+                y0_i_Plus1 = y0_i + delta_y0
+                y0_i_Plus2 = y0_i + 2 * delta_y0
+                y0_i_Plus3 = y0_i + 3 * delta_y0
+                y0_New.append(y0_i)
+                y0_New.append(y0_i_Plus1)
+                y0_New.append(y0_i_Plus2)
+                y0_New.append(y0_i_Plus3)
+                # add the zs of the new nodes
+                z0_i = z0_Temp[i, :]
+                z0_i_Next = z0_Temp[i + 1, :]
+                delta_z0 = (z0_i_Next - z0_i) / 4
+                z0_i_Plus1 = z0_i + delta_z0
+                z0_i_Plus2 = z0_i + 2 * delta_z0
+                z0_i_Plus3 = z0_i + 3 * delta_z0
+                z0_New.append(z0_i)
+                z0_New.append(z0_i_Plus1)
+                z0_New.append(z0_i_Plus2)
+                z0_New.append(z0_i_Plus3)
+                # update the index
+                # 1 original node + 3 newly added nodes
+                N_New += 4
+                k_A += 3
+                i += 1
+            else:
+                # add one node to the middle
+                # add the time point of the new node
+                delta_t = (tspan_Temp[i + 1] - tspan_Temp[i]) / 2
+                t_i = tspan_Temp[i]
+                t_i_Plus1 = t_i + delta_t
+                tspan_New.append(t_i)
+                tspan_New.append(t_i_Plus1)
+                # add the residual of the new node
+                delta_res = (residual_Temp[i + 1] - residual_Temp[i]) / 2
+                res_i_Plus1 = res_i + delta_res
+                residual_New.append(res_i)
+                residual_New.append(res_i_Plus1)
+                # add the y of the new node
+                y0_i = y0_Temp[i, :]
+                y0_i_Next = y0_Temp[i + 1, :]
+                delta_y0 = (y0_i_Next - y0_i) / 2
+                y0_i_Plus1 = y0_i + delta_y0
+                y0_New.append(y0_i)
+                y0_New.append(y0_i_Plus1)
+                # add the z of the new node
+                z0_i = z0_Temp[i, :]
+                z0_i_Next = z0_Temp[i + 1, :]
+                delta_z0 = (z0_iNext - z0_i) / 2
+                z0_i_Plus1 = z0_i + delta_z0
+                z0_New.append(z0_i)
+                z0_New.append(z0_i_Plus1)
+                # update the index
+                # 1 original node + 1 newly added node
+                N_New += 2
+                k_A += 1
+                i += 1
+        else:
+            # add the current node only
+            # add the time node of the current node
+            t_i = tspan_Temp[i]
+            tspan_New.append(t_i)
+            # add the residual of the current node
+            residual_New.append(res_i)
+            # add the y of the current node
+            y0_i = y0_Temp[i, :]
+            y0_New.append(y0_i)
+            # add the z of the current node
+            z0_i = z0_Temp[i, :]
+            z0_New.append(z0_i)
+            # update the index
+            # 1 original node only
+            N_New += 1
+            i += 1
+    # convert from list to numpy arrays for the convenience of indexing
+    tspan_New = np.array(tspan_New)
+    y0_New = np.array(y0_New)
+    z0_New = np.array(z0_New)
+    residual_New = np.array(residual_New)
+    # return the output
+    return N_New, tspan_New, y0_New, z0_New
 
 if __name__ == '__main__':
     bvp_dae = bvp_problem.bvp_dae()
