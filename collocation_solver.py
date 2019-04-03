@@ -1,5 +1,6 @@
 from collocation_coefficients import *
 from collocation_node import *
+from gauss_coefficients import *
 import numpy as np
 import bvp_problem
 import math
@@ -29,18 +30,18 @@ def collocation_solver(bvp_dae):
     size_p = bvp_dae.size_p
     size_inequality = bvp_dae.size_inequality
     N = bvp_dae.N  # number of time nodes
-    tspan = bvp_dae.T0
-    y0 = bvp_dae.Y0
-    z0 = bvp_dae.Z0
-    p0 = bvp_dae.P0
-    m = 3  # number of coloocation points
+    t_span_init = bvp_dae.T0
+    y_init = bvp_dae.Y0
+    z_init = bvp_dae.Z0
+    p_init = bvp_dae.P0
+    m = 3  # number of collocation points
 
     tol = bvp_dae.tolerance
     max_iter = bvp_dae.maximum_newton_iterations
     max_mesh = bvp_dae.maximum_mesh_refinements
     max_nodes = bvp_dae.maximum_nodes
     min_nodes = 3
-    max_linesearch = 20
+    max_line_search = 20
     alpha = 1  # continuation parameter
     if size_inequality > 0:
         alpha_final = 1e-6
@@ -50,46 +51,91 @@ def collocation_solver(bvp_dae):
 
     start_time = time.time()
     rk = lobatto(m)
-    sol = form_initial_input(bvp_dae, size_y, size_z, size_p, m, N, tspan, y0, z0, p0, alpha, rk)
-    tspan0, q0 = struct_to_vec(size_y, size_z, size_p, m, N, sol)
-    for alphacal in range(max_iter):
+    sol = form_initial_input(bvp_dae, size_y, size_z, size_p, m, N, t_span_init, y_init, z_init, p_init, alpha, rk)
+    t_span0, q0 = struct_to_vec(size_y, size_z, size_p, m, N, sol)
+    for alpha_cal in range(max_iter):
+        iter_time = 0
+        mesh_time = 0
         for iter_time in range(max_iter):
-            F_q0, sol = F_q(bvp_dae, size_y, size_z, size_p, m, N, rk, tspan0, q0, alpha)
-            norm_F_q0 = np.linalg.norm(F_q0, np.inf)
-            print("Newton iteration: ", iter_time, ", Residual: ", norm_F_q0)
-            if norm_F_q0 < tol:
-                print("alpha = ", alpha, "Solution found")
+            f_q0, sol = F_q(bvp_dae, size_y, size_z, size_p, m, N, rk, t_span0, q0, alpha)
+            norm_f_q0 = np.linalg.norm(f_q0, np.inf)
+            # print("Newton iteration: ", iter_time, ", Residual: ", norm_F_q0)
+            # convergence check
+            if norm_f_q0 < tol:
+                print('{}{},{}.{}{}'.format('alpha = ', alpha, 'solution found', 'Number of nodes: ', N))
                 break
+            # construct the Jacobin matrix of the system
             Jacobian_construct(bvp_dae, size_y, size_z, size_p, m, N, rk, alpha, sol)
             # M = f_d_jacobian(bvp_dae, size_y, size_z, size_p, m, N, rk, tspan0, q0, alpha)
             # delta_q0 = np.linalg.solve(M, -F_q0)
+
+            # Use qr decomposition to solve the BABD system
             qr_decomposition(size_y, size_p, N, sol)
+            # Use backward substitution to obtain the Newton search direction
             backward_substitution(N, sol)
+            # recover the search direction
             delta_q0 = get_delta_q(size_y, size_z, size_p, m, N, sol)
             norm_delta_q0 = np.linalg.norm(delta_q0, np.inf)
-
+            # convergence check
             if norm_delta_q0 < tol:
-                print("alpha = ", alpha, "Solution found")
+                print('{}{},{}.{}{}'.format('alpha = ', alpha, 'solution found', 'Number of nodes: ', N))
                 break
-            # print(delta_q0)
             alpha0 = 1
-            for i in range(max_linesearch):
+            i = 0
+            for i in range(max_line_search):
                 q_new = q0 + alpha0 * delta_q0
-                F_q_new, _ = F_q(bvp_dae, size_y, size_z, size_p, m, N, rk, tspan0, q_new, alpha)
-                norm_F_q_new = np.linalg.norm(F_q_new, np.inf)
-                if norm_F_q_new < norm_F_q0:
+                f_q_new, _ = F_q(bvp_dae, size_y, size_z, size_p, m, N, rk, t_span0, q_new, alpha)
+                norm_f_q_new = np.linalg.norm(f_q_new, np.inf)
+                if norm_f_q_new < norm_f_q0:
                     q0 = q_new
                     break
                 alpha0 /= 2
-        print("alpha = ", alpha, "Number of nodes: ", N)
-        alpha *= beta
-        if alpha <= alpha_final:
-            print("Final solution found!")
+            if i == max_line_search:
+                if mesh_time > max_mesh:
+                    print('{}'.format('Reach maximum mesh number allowed.'))
+                residual, max_residual = \
+                    compute_segment_residual(bvp_dae, rk, size_y, size_z, size_p, m, N, alpha, tol, t_span0, q0)
+                y0, z0, p0 = recover_solution(size_y, size_z, size_p, m, N, rk, t_span0, q0)
+                N, t_span0, y0, z0 = remesh(size_y, size_z, N, t_span0, y0, z0, residual)
+                mesh_time += 1
+                if N > max_nodes:
+                    print('{}'.format('Reach maximum number of nodes allowed.'))
+                elif N < min_nodes:
+                    print('{}'.format('Reach minimum number of nodes allowed.'))
+                sol = form_initial_input(bvp_dae, size_y, size_z, size_p, m, N, t_span0, y0, z0, p0, alpha, rk)
+                t_span0, q0 = struct_to_vec(size_y, size_z, size_p, m, N, sol)
+        # check whether the iteration exceeds the maximum number
+        if iter_time == max_iter:
+            print('{}'.format('Exceed the maximum number of iterations allowed!'))
             break
+        # check the residual of the solution
+        residual, max_residual = \
+            compute_segment_residual(bvp_dae, rk, size_y, size_z, size_p, m, N, alpha, tol, t_span0, q0)
+        print('{}{}{}{}.'.format('Max residual error = ', max_residual, ', number of nodes = ', N))
+        if max_residual > 1:
+            if mesh_time > max_mesh:
+                print('{}'.format('Reach maximum mesh number allowed.'))
+            y0, z0, p0 = recover_solution(size_y, size_z, size_p, m, N, rk, t_span0, q0)
+            N, t_span0, y0, z0 = remesh(size_y, size_z, N, t_span0, y0, z0, residual)
+            mesh_time += 1
+            if N > max_nodes:
+                print('{}'.format('Reach maximum number of nodes allowed.'))
+            elif N < min_nodes:
+                print('{}'.format('Reach minimum number of nodes allowed.'))
+            sol = form_initial_input(bvp_dae, size_y, size_z, size_p, m, N, t_span0, y0, z0, p0, alpha, rk)
+            t_span0, q0 = struct_to_vec(size_y, size_z, size_p, m, N, sol)
+            residual, max_residual = \
+                compute_segment_residual(bvp_dae, rk, size_y, size_z, size_p, m, N, alpha, tol, t_span0, q0)
+            print('{}{}{}{}.'.format('Max residual error = ', max_residual, ', number of nodes = ', N))
+        else:
+            if alpha <= alpha_final:
+                print("Final solution found!")
+                break
+            alpha *= beta
     end_time = time.time()
-    y0, z0, p = recover_solution(size_y, size_z, size_p, m, N, rk, tspan0, q0)
+    y0, z0, p0 = recover_solution(size_y, size_z, size_p, m, N, rk, t_span0, q0)
     print("Elapsed time: ", end_time - start_time)
-    plot_result(size_y, size_z, tspan0, y0, z0)
+    plot_result(size_y, size_z, t_span0, y0, z0)
 
 
 '''
@@ -463,86 +509,109 @@ def plot_result(size_y, size_z, tspan, y, z):
         fig, ax = plt.subplots()
         ax.plot(tspan, y[:, i])
         ax.set(xlabel='time', ylabel='ODE variable %s' % (i + 1),
-               title='ODE variable')
+               title='{}_{}'.format('ODE variable', (i + 1)))
         ax.grid()
         plt.show()
     for i in range(size_z):
         fig, ax = plt.subplots()
         ax.plot(tspan, z[:, i])
         ax.set(xlabel='time', ylabel='DAE variable %s' % (i + 1),
-               title='DAE variable')
+               title='{}_{}'.format('DAE variable', (i + 1)))
         ax.grid()
         plt.show()
 
 # Compute segment residual at each node
-def compute_segment_residual(bvp_dae, rk, size_y, size_z, size_p, m, N, alpha, tol, sol):
+
+
+def compute_segment_residual(bvp_dae, rk, size_y, size_z, size_p, m, N, alpha, tol, tspan0, q0):
 
     def get_ydot(j, t):
         # ydot = sum_{k=1,m} L_k(t) * ydot_jk
-        ydot = np.zeros((size_y), dtype = np.float64)
+        y_dot = np.zeros(size_y, dtype = np.float64)
         for k in range(m):
-            ydot += rk.L(t)[k] * sol[j].y_Dot[0 : size_y, k]
-        return ydot
+            y_dot += rk.L(t)[k] * sol[j].y_dot[0 : size_y, k]
+        return y_dot
 
     def get_z(j, t):
         # z = sum_{k=1,m} L_k(t) * z_jk
-        z = zeros((size_z), dtype = np.float64)
+        z = np.zeros((size_z), dtype = np.float64)
         for k in range(m):
-            z += rk.L(t)[k] * sol[j].z_Tilda[0 : size_z, k]
+            z += rk.L(t)[k] * sol[j].z_tilda[0 : size_z, k]
         return z
         
     def get_y(j, t):
         # y = sy + delta*sum_{k=1,m} I_k(t) * ydot_jk
-        y = sol[j].y
+        y = np.copy(sol[j].y)
         delta_t = sol[j].delta_t
         for k in range(m):
-            y += delta_t * rk.I(t)[k] * sol[j].y_Dot[0 : size_y, k]
+            y += delta_t * rk.I(t)[k] * sol[j].y_dot[0 : size_y, k]
         return y
 
+    sol = vec_to_struct(size_y, size_z, size_p, m, N, rk, tspan0, q0)
     if size_p > 0:
-        p = sol[N].p
-
+        p = sol[N - 1].p
     residual = np.zeros((N), dtype = np.float64)
     max_rho_h = 0
     max_rho_g = 0
     max_rho_r = 0
-    [tau, w] = gauss_coeff(m + 1)
+    gauss_coefficients = gauss(m + 1)
+    tau = gauss_coefficients.t
+    w = gauss_coefficients.w
     for j in range(N - 1):
         delta = sol[j].delta_t
         rho_h = 0
         rho_g = 0
         for i in range(m + 1):
             t = tau[i]
-            ydot = get_ydot(j, t)
+            y_dot = get_ydot(j, t)
             y = get_y(j, t)
             if size_z > 0:
                 z = get_z(j, t)
-            h_res = np.zeros((size_y), dtype = np.float64)
+            h_res = np.zeros(size_y, dtype = np.float64)
             bvp_dae._abvp_f(y, z, p, h_res)
             # h(y,z,p) - ydot
-            h_res -= ydot
+            h_res -= y_dot
             rho_h += np.dot(h_res, h_res) * w[i]
             if size_z > 0:
-                g_res = np.zeros((size_z), dtype = np.float64)
-                _abvp_g(y, z, p, alpha, g_res)
-                rho_g += dot(g_res, g_res) * w[i]
-        
+                g_res = np.zeros(size_z, dtype = np.float64)
+                bvp_dae._abvp_g(y, z, p, alpha, g_res)
+                rho_g += np.dot(g_res, g_res) * w[i]
         residual[j] = math.sqrt(delta * (rho_h + rho_g)) / tol
         
         max_rho_h = max(max_rho_h, math.sqrt(delta * rho_h))
         max_rho_g = max(max_rho_g, math.sqrt(delta * rho_g))
-
     if (size_y + size_p) > 0:
         r = np.zeros((size_y + size_p), dtype = np.float64)
-        _abvp_r(sol[0].y, sol[N - 1].y, p, r)
+        bvp_dae._abvp_r(sol[0].y, sol[N - 1].y, p, r)
         max_rho_r = np.linalg.norm(r, np.inf)
-        residual[N] = max_rho_r / tol
-    print('{}{}{}{}{}{}\n'.format('res: |h|: ', max_rho_h, ', |g|: ', max_rho_g, ', |r|: ', max_rho_r))
-    return residual
+        residual[N - 1] = max_rho_r / tol
+    max_residual = np.amax(residual)
+    print('{}{}{}{}{}{}'.format('res: |h|: ', max_rho_h, ', |g|: ', max_rho_g, ', |r|: ', max_rho_r))
+    return residual, max_residual
 
-# Remesh the problem
-# def [tspan, y0, z0] = remesh(tspan, y0, z0, residual)
-def remesh(size_y, size_z, N, m, tspan, y0, z0, residual):
+'''
+ Remesh the problem
+ def [N_New, tspan_New, y0_New, z0_New] = remesh(size_y, size_z, N, tspan, y0, z0, residual)
+ Input:
+        size_y : number of y variables.
+        size_z : number of z variables.
+        N : number of time nodes.
+        m : number of collocation points used.
+        tspan : distribution of the time nodes, 1-D array.
+        y0 : 2-D matrix of values of the y variables, with each ith row vector corresponding to
+             the y values at the ith time node.
+        z0 : 2 -D matrix of values of the z variables, with each ith row vector corresponding to
+             the y values at the ith time node.
+        residual : residual errors at each time node, 1-D array.
+ Output:
+        N_New : number of time nodes of the new mesh .
+        tspan_New : new distribution of the time nodes, 1-D array.
+        y0_New : 2-D matrix of the values of the y variables of the new mesh.
+        z0_New : 2-D matrix of the values of the z variables of the new mesh.
+'''
+
+
+def remesh(size_y, size_z, N, tspan, y0, z0, residual):
     N_Temp = 0
     tspan_Temp = []
     y0_Temp = []
@@ -557,25 +626,25 @@ def remesh(size_y, size_z, N, m, tspan, y0, z0, residual):
     thresholdDel = 1e-2
     while i < N - 4:
         res_i = residual[i]
-        if (res_i <= thresholdDel):
+        if res_i <= thresholdDel:
             res_i_Plus1 = residual[i + 1]
             res_i_Plus2 = residual[i + 2]
             res_i_Plus3 = residual[i + 3]
             res_i_Plus4 = residual[i + 4]
-            if ((res_i_Plus1 <= thresholdDel) and (res_i_Plus2 <= thresholdDel) and (res_i_Plus3 <= thresholdDel) and (res_i_Plus4 <= thresholdDel)):
+            if res_i_Plus1 <= thresholdDel and res_i_Plus2 <= thresholdDel and res_i_Plus3 <= thresholdDel and res_i_Plus4 <= thresholdDel:
                 # append the 1st, 3rd, and 5th node
                 # 1st node
-                tspan_Temp.appned(tspan[i])
+                tspan_Temp.append(tspan[i])
                 y0_Temp.append(y0[i, :])
                 z0_Temp.append(z0[i, :])
                 residual_Temp.append(residual[i])
                 # 3rd node
-                tspan_Temp.appned(tspan[i + 2])
+                tspan_Temp.append(tspan[i + 2])
                 y0_Temp.append(y0[i + 2, :])
                 z0_Temp.append(z0[i + 2, :])
                 residual_Temp.append(residual[i + 2])
                 # 5th node
-                tspan_Temp.appned(tspan[i + 4])
+                tspan_Temp.append(tspan[i + 4])
                 y0_Temp.append(y0[i + 4, :])
                 z0_Temp.append(z0[i + 4, :])
                 residual_Temp.append(residual[i + 4])
@@ -587,7 +656,7 @@ def remesh(size_y, size_z, N, m, tspan, y0, z0, residual):
                 i += 5
             else:
                 # directly add the node
-                tspan_Temp.appned(tspan[i])
+                tspan_Temp.append(tspan[i])
                 y0_Temp.append(y0[i, :])
                 z0_Temp.append(z0[i, :])
                 residual_Temp.append(residual[i])
@@ -595,29 +664,29 @@ def remesh(size_y, size_z, N, m, tspan, y0, z0, residual):
                 i += 1
         else:
             # directly add the node
-            tspan_Temp.appned(tspan[i])
+            tspan_Temp.append(tspan[i])
             y0_Temp.append(y0[i, :])
             z0_Temp.append(z0[i, :])
             residual_Temp.append(residual[i])
             N_Temp += 1
             i += 1 
     '''
-        if the previous loop stop at the (N - 4)th node, those last
-        four nodes should be added manually
-        if the last five nodes have already been processed, the index i
-        should be equal to N, then nothing needs to be done
+        if the previous loop stop at the ith node which is bigger than (N - 4), those last
+        few nodes left are added manually, if the last few nodes have already been processed,
+        the index i should be equal to N, then nothing needs to be done
     '''
-    if (i == N - 4):
+    if i < N:
         '''
-            add the last 4 nodes starting from i = N - 4 to N - 1, which
-            is a total of 4 nodes
+            add the last few nodes starting from i to N - 1, which
+            is a total of (N - i) nodes
         '''
-        for j in range(4):
+        for j in range(N - i):
             # append the N - 4 + j node
-            tspan_Temp.appned(tspan[N - 4 + j])
-            y0_Temp.append(y0[N - 4 + j, :])
-            z0_Temp.append(z0[N - 4 + j, :])
-            residual_Temp.append(residual[N - 4 + j])
+            tspan_Temp.append(tspan[i + j])
+            y0_Temp.append(y0[i + j, :])
+            z0_Temp.append(z0[i + j, :])
+            residual_Temp.append(residual[i + j])
+            N_Temp += 1
     # convert from list to numpy arrays for the convenience of indexing
     tspan_Temp = np.array(tspan_Temp)
     y0_Temp = np.array(y0_Temp)
@@ -632,12 +701,12 @@ def remesh(size_y, size_z, N, m, tspan, y0, z0, residual):
     # Adding Nodes
     i = 0
     # Record the number of the added nodes
-    kA = 0
+    k_A = 0
 
     while i < N_Temp - 1:
         res_i = residual_Temp[i]
-        if (res_i > 1):
-            if (res_i > 100):
+        if res_i > 1:
+            if res_i > 10:
                 # add three uniformly spaced nodes
                 # add the time point of new nodes
                 delta_t = (tspan_Temp[i + 1] - tspan_Temp[i]) / 4
@@ -708,7 +777,7 @@ def remesh(size_y, size_z, N, m, tspan, y0, z0, residual):
                 # add the z of the new node
                 z0_i = z0_Temp[i, :]
                 z0_i_Next = z0_Temp[i + 1, :]
-                delta_z0 = (z0_iNext - z0_i) / 2
+                delta_z0 = (z0_i_Next - z0_i) / 2
                 z0_i_Plus1 = z0_i + delta_z0
                 z0_New.append(z0_i)
                 z0_New.append(z0_i_Plus1)
@@ -734,6 +803,12 @@ def remesh(size_y, size_z, N, m, tspan, y0, z0, residual):
             # 1 original node only
             N_New += 1
             i += 1
+    # add the final node
+    tspan_New.append(tspan_Temp[N_Temp - 1])
+    y0_New.append(y0_Temp[N_Temp - 1, :])
+    z0_New.append(z0_Temp[N_Temp - 1, :])
+    residual_New.append(residual_Temp[N_Temp - 1])
+    N_New += 1
     # convert from list to numpy arrays for the convenience of indexing
     tspan_New = np.array(tspan_New)
     y0_New = np.array(y0_New)
@@ -741,6 +816,7 @@ def remesh(size_y, size_z, N, m, tspan, y0, z0, residual):
     residual_New = np.array(residual_New)
     # return the output
     return N_New, tspan_New, y0_New, z0_New
+
 
 if __name__ == '__main__':
     bvp_dae = bvp_problem.bvp_dae()
