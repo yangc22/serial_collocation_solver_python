@@ -2,11 +2,21 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="c28ff260-11a4-487e-a9ac-710efa02f7ff" name="Default Changelist" comment="">
+<<<<<<< HEAD
       <change afterPath="$PROJECT_DIR$/qr_decomposition.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/collocation_node.py" beforeDir="false" afterPath="$PROJECT_DIR$/collocation_node.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/collocation_solver.py" beforeDir="false" afterPath="$PROJECT_DIR$/collocation_solver.py" afterDir="false" />
+=======
+<<<<<<< HEAD
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/serial_collocation_solver_python.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/serial_collocation_solver_python.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/collocation_solver.py" beforeDir="false" afterPath="$PROJECT_DIR$/collocation_solver.py" afterDir="false" />
+=======
+>>>>>>> 62c17e02905edea9a53ffadb5867c9fd63111d50
       <change beforePath="$PROJECT_DIR$/matrix_factorization.py" beforeDir="false" afterPath="$PROJECT_DIR$/matrix_factorization.py" afterDir="false" />
+>>>>>>> 8e53eb817f672b66378647d357a1efb1c875caf7
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -64,11 +74,21 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$APPLICATION_CONFIG_DIR$/scratches/scratch.py">
           <provider selected="true" editor-type-id="text-editor">
+<<<<<<< HEAD
             <state relative-caret-position="112">
               <caret line="170" column="26" selection-start-line="170" selection-start-column="26" selection-end-line="170" selection-end-column="26" />
+=======
+<<<<<<< HEAD
+            <state relative-caret-position="321">
+              <caret line="35" selection-start-line="35" selection-end-line="35" />
+=======
+            <state relative-caret-position="375">
+              <caret line="150" column="4" selection-start-line="150" selection-start-column="4" selection-end-line="150" selection-end-column="4" />
+>>>>>>> 62c17e02905edea9a53ffadb5867c9fd63111d50
               <folding>
                 <element signature="e#0#32#0" expanded="true" />
               </folding>
+>>>>>>> 8e53eb817f672b66378647d357a1efb1c875caf7
             </state>
           </provider>
         </entry>
@@ -123,10 +143,22 @@
       </list>
     </option>
   </component>
+<<<<<<< HEAD
   <component name="ProjectFrameBounds" extendedState="6">
+=======
+<<<<<<< HEAD
+  <component name="ProjectFrameBounds">
+    <option name="x" value="67" />
+    <option name="y" value="43" />
+    <option name="width" value="1400" />
+    <option name="height" value="788" />
+=======
+  <component name="ProjectFrameBounds" fullScreen="true">
+>>>>>>> 62c17e02905edea9a53ffadb5867c9fd63111d50
     <option name="y" value="23" />
     <option name="width" value="1440" />
     <option name="height" value="831" />
+>>>>>>> 8e53eb817f672b66378647d357a1efb1c875caf7
   </component>
   <component name="ProjectView">
     <navigator proportions="" version="1">
@@ -157,7 +189,11 @@
     </panes>
   </component>
   <component name="PropertiesComponent">
+<<<<<<< HEAD
+    <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
+=======
     <property name="com.intellij.ide.scratch.LRUPopupBuilder$1/New Scratch File" value="Python" />
+>>>>>>> 8e53eb817f672b66378647d357a1efb1c875caf7
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="settings.editor.selected.configurable" value="preferences.editor" />
   </component>
@@ -173,7 +209,11 @@
       </list>
     </option>
   </component>
+<<<<<<< HEAD
+  <component name="RunManager" selected="Python.collocation_solver">
+=======
   <component name="RunManager" selected="Python.scratch">
+>>>>>>> 8e53eb817f672b66378647d357a1efb1c875caf7
     <configuration default="true" type="JupiterNotebook" factoryName="Jupyter Notebook">
       <module name="serial_collocation_solver_python" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -275,6 +315,8 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+<<<<<<< HEAD
+=======
     <configuration name="scratch" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="serial_collocation_solver_python" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -296,6 +338,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+>>>>>>> 8e53eb817f672b66378647d357a1efb1c875caf7
     <configuration name="test_collocation" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="serial_collocation_solver_python" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -321,12 +364,18 @@
       <item itemvalue="Python.bin" />
       <item itemvalue="Python.collocation_coefficients" />
       <item itemvalue="Python.test_collocation" />
+<<<<<<< HEAD
+=======
       <item itemvalue="Python.scratch" />
+>>>>>>> 8e53eb817f672b66378647d357a1efb1c875caf7
       <item itemvalue="Python.collocation_solver" />
     </list>
     <recent_temporary>
       <list>
+<<<<<<< HEAD
+=======
         <item itemvalue="Python.scratch" />
+>>>>>>> 8e53eb817f672b66378647d357a1efb1c875caf7
         <item itemvalue="Python.collocation_solver" />
         <item itemvalue="Python.test_collocation" />
       </list>
@@ -355,7 +404,23 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
+<<<<<<< HEAD
     <frame x="0" y="23" width="1440" height="830" extended-state="6" />
+=======
+<<<<<<< HEAD
+    <frame x="67" y="43" width="1400" height="788" extended-state="0" />
+    <editor active="true" />
+    <layout>
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.24909224" />
+      <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
+      <window_info id="Favorites" order="2" side_tool="true" />
+      <window_info anchor="bottom" id="Message" order="0" />
+      <window_info anchor="bottom" id="Find" order="1" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.3262519" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.3994253" />
+=======
+    <frame x="0" y="0" width="1440" height="900" extended-state="0" />
+>>>>>>> 62c17e02905edea9a53ffadb5867c9fd63111d50
     <editor active="true" />
     <layout>
       <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.1952079" />
@@ -365,6 +430,7 @@
       <window_info anchor="bottom" id="Find" order="1" weight="0.32746956" />
       <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.3211382" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.3980978" />
+>>>>>>> 8e53eb817f672b66378647d357a1efb1c875caf7
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" weight="0.32746956" />
@@ -534,8 +600,17 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/qr_decomposition.py">
       <provider selected="true" editor-type-id="text-editor">
+<<<<<<< HEAD
         <state relative-caret-position="241">
           <caret line="61" column="18" lean-forward="true" selection-start-line="61" selection-start-column="18" selection-end-line="61" selection-end-column="18" />
+=======
+<<<<<<< HEAD
+        <state relative-caret-position="321">
+          <caret line="35" selection-start-line="35" selection-end-line="35" />
+=======
+        <state relative-caret-position="723">
+          <caret line="391" column="36" selection-start-line="391" selection-start-column="33" selection-end-line="391" selection-end-column="36" />
+>>>>>>> 62c17e02905edea9a53ffadb5867c9fd63111d50
           <folding>
             <element signature="e#0#18#0" expanded="true" />
           </folding>
@@ -566,6 +641,7 @@
           <folding>
             <element signature="e#0#38#0" expanded="true" />
           </folding>
+>>>>>>> 8e53eb817f672b66378647d357a1efb1c875caf7
         </state>
       </provider>
     </entry>
