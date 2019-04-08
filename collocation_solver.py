@@ -368,7 +368,7 @@ def Jacobian_construct(bvp_dae, size_y, size_z, size_p, m, N, rk, alpha, sol):
             bvp_dae._abvp_Df(y, z, p0, Dh)
             bvp_dae._abvp_Dg(y, z, p0, alpha, Dg)
             sol[i].set_Jacobian(a, b[j], Dh, Dg, j)
-    Dr = Dh = np.zeros(((size_y + size_p), (size_y + size_y + size_p)), dtype=np.float64)
+    Dr = np.zeros(((size_y + size_p), (size_y + size_y + size_p)), dtype=np.float64)
     y0 = sol[0].get_y()
     yM = sol[0].get_y()
     bvp_dae._abvp_Dr(y0, yM, p0, Dr)

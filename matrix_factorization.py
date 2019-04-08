@@ -1,5 +1,6 @@
-import math
+from math import *
 import numpy as np
+import sys
 
 '''
     QR decomposition of the matrix B, B = Q * R
@@ -124,3 +125,82 @@ def make_householder(a):
     H = np.eye(a.shape[0])
     H -= (2 / np.dot(v, v)) * np.dot(v[:, None], v[None, :])
     return H
+
+
+def qr_cuda(a, cpy, q, r, v, vv, beta, w_t, u_t):
+    """
+        QR factorization of self via Householder transformation.
+        Returns Q, R such that a = Q*R.
+        a : matrix, size: n x m
+        cpy : matrix, size: n x m
+        q : matrix, size: n x n
+        v : matrix, size: n x m
+        beta : vector, size: m
+        r: matrix, size n x m
+        vv: vector, size: n(max size)
+        w_t: vector, size: m(max size)
+        u_t: vector, size: n(max size)
+    """
+    n, m = a.shape
+    if m > n:
+        raise TypeError('qr requires a matrix with columns <= rows')
+    # copy a matrix
+    for i in range(n):
+        for j in range(m):
+            cpy[i, j] = a[i, j]
+    col = m
+    # set q as the identity matrix
+    for i in range(n):
+        for j in range(n):
+            if i == j:
+                q[i, j] = 1
+            else:
+                q[i, j] = 0
+    # process each column
+    for k in range(0, m):
+        for i in range(k, n):
+            vv[i] = a[i, k]
+        if vv[k] >= 0:
+            s = 1.0
+        else:
+            s = -1.0
+        vv_dot = 0
+        for i in range(k, n):
+            vv_dot += vv[i] * vv[i]
+        g = -s * sqrt(vv_dot)
+        vv[k] = vv[k] - g
+        vs = 0
+        for i in range(k, n):
+            vs += vv[i] * vv[i]
+        if vs < sys.float_info.epsilon:
+            col = k
+            break
+        b = -2.0 / vs
+        for i in range(k, m):
+            w_t[i] = 0
+            for j in range(k, n):
+                w_t[i] += vv[j] * a[j, i]
+        for i in range(k, n):
+            for j in range(k, m):
+                a[i, j] += b * vv[i] * w_t[j]
+        beta[k] = b
+        for i in range(k, n):
+            v[i, k] = vv[i]
+    for i in range(m):
+        for j in range(m):
+            r[i, j] = a[i, j]
+    # set the other elements as 0s
+    for i in range(m, n):
+        for j in range(m):
+            r[i, j] = 0
+    for k in range(col - 1, -1, -1):
+        for i in range(k, n):
+            vv[i] = v[i, k]
+        for i in range(k, n):
+            u_t[i] = 0
+            for j in range(k, n):
+                u_t[i] += vv[j] * q[j, i]
+        for i in range(k, n):
+            for j in range(k, n):
+                q[i, j] += beta[k] * vv[i] * u_t[j]
+    return q, r

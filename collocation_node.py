@@ -216,12 +216,12 @@ class collocation_node:
         gz = np.zeros((self.size_z, self.size_z), dtype = np.float64)
         gp = np.zeros((self.size_z, self.size_p), dtype = np.float64)
         '''
-        hy = Dh[0 : , 0 : self.size_y]
-        hz = Dh[0 : , self.size_y : self.size_y + self.size_z]
-        hp = Dh[0 : , self.size_y + self.size_z : ]
-        gy = Dg[0 : , 0 : self.size_y]
-        gz = Dg[0 : , self.size_y : self.size_y + self.size_z]
-        gp = Dg[0 : , self.size_y + self.size_z : ]
+        hy = Dh[0:, 0: self.size_y]
+        hz = Dh[0:, self.size_y: self.size_y + self.size_z]
+        hp = Dh[0:, self.size_y + self.size_z:]
+        gy = Dg[0:, 0: self.size_y]
+        gz = Dg[0:, self.size_y: self.size_y + self.size_z]
+        gp = Dg[0:, self.size_y + self.size_z:]
         '''
         for i in range(self.size_y):
             for j in range(self.size_y):
@@ -258,7 +258,7 @@ class collocation_node:
             for j in range(self.size_p):
                 self.V[start_row_index_g + i][j] = gp[i][j]
         '''
-        self.D[0 : self.size_y, j_col * (self.size_y + self.size_z) : j_col * (self.size_y + self.size_z) + self.size_y] =  self.delta_t * b * np.eye(self.size_y, dtype = np.float64)
+        self.D[0: self.size_y, j_col * (self.size_y + self.size_z): j_col * (self.size_y + self.size_z) + self.size_y] = self.delta_t * b * np.eye(self.size_y, dtype=np.float64)
         '''
         for i in range(self.size_y):
             self.D[i][i + j_col * (self.size_y + self.size_z)] = self.delta_t * b * 1
@@ -268,7 +268,7 @@ class collocation_node:
         # loop through all the column block  
         for i in range(self.m):
             start_row_index = j_col * (self.size_y + self.size_z)
-            w_tmp = np.zeros(((self.size_y + self.size_z), (self.size_y + self.size_z)), dtype = np.float64)
+            w_tmp = np.zeros(((self.size_y + self.size_z), (self.size_y + self.size_z)), dtype=np.float64)
             if i == j_col:
                 start_col_index = i * (self.size_y + self.size_z)
                 identity = np.eye(self.size_y, dtype = np.float64)
