@@ -1,7 +1,7 @@
-# from math import *
+from math import *
 
 
-def qr(a, cpy, q, r, v, vv, beta, w_t, u_t):
+def qr(a, cpy, q, r, v, vv, beta, w_t, u_t, eps):
     """
         QR factorization of self via Householder transformation.
         Returns Q, R such that a = Q*R.
@@ -15,7 +15,7 @@ def qr(a, cpy, q, r, v, vv, beta, w_t, u_t):
         w_t: vector, size: m(max size)
         u_t: vector, size: n(max size)
     """
-    n, m = a.shape
+    n, m = cpy.shape
     if m > n:
         raise TypeError('qr requires a matrix with columns <= rows')
     # copy a matrix
@@ -33,7 +33,7 @@ def qr(a, cpy, q, r, v, vv, beta, w_t, u_t):
     # process each column
     for k in range(0, m):
         for i in range(k, n):
-            vv[i] = a[i, k]
+            vv[i] = cpy[i, k]
         if vv[k] >= 0:
             s = 1.0
         else:
@@ -46,23 +46,23 @@ def qr(a, cpy, q, r, v, vv, beta, w_t, u_t):
         vs = 0
         for i in range(k, n):
             vs += vv[i] * vv[i]
-        if vs < sys.float_info.epsilon:
+        if vs < eps:
             col = k
             break
         b = -2.0 / vs
         for i in range(k, m):
             w_t[i] = 0
             for j in range(k, n):
-                w_t[i] += vv[j] * a[j, i]
+                w_t[i] += vv[j] * cpy[j, i]
         for i in range(k, n):
             for j in range(k, m):
-                a[i, j] += b * vv[i] * w_t[j]
+                cpy[i, j] += b * vv[i] * w_t[j]
         beta[k] = b
         for i in range(k, n):
             v[i, k] = vv[i]
     for i in range(m):
         for j in range(m):
-            r[i, j] = a[i, j]
+            r[i, j] = cpy[i, j]
     # set the other elements as 0s
     for i in range(m, n):
         for j in range(m):
