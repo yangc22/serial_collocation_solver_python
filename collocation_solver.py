@@ -372,9 +372,9 @@ def Jacobian_construct(bvp_dae, size_y, size_z, size_p, m, N, rk, alpha, sol):
     y0 = sol[0].get_y()
     yM = sol[0].get_y()
     bvp_dae._abvp_Dr(y0, yM, p0, Dr)
-    r_y0 = np.zeros((size_y + size_p, size_y), dtype=np.float64)
-    r_yM = np.zeros((size_y + size_p, size_y), dtype=np.float64)
-    r_p0 = np.zeros((size_y + size_p, size_p), dtype=np.float64)
+    # r_y0 = np.zeros((size_y + size_p, size_y), dtype=np.float64)
+    # r_yM = np.zeros((size_y + size_p, size_y), dtype=np.float64)
+    # r_p0 = np.zeros((size_y + size_p, size_p), dtype=np.float64)
     '''
     for i in range(size_y + size_p):
         for j in range(size_y):
@@ -384,9 +384,9 @@ def Jacobian_construct(bvp_dae, size_y, size_z, size_p, m, N, rk, alpha, sol):
         for j in range(size_p):
             r_p0[i][j] = Dr[i][j + (size_y + size_y)]
     '''
-    r_y0 = Dr[0 : size_y + size_p, 0 : size_y] 
-    r_yM = Dr[0 : size_y + size_p, size_y : size_y + size_y]
-    r_p0 = Dr[0 : size_y + size_p, size_y + size_y : size_y + size_y + size_p]
+    r_y0 = Dr[0: size_y + size_p, 0 : size_y]
+    r_yM = Dr[0: size_y + size_p, size_y : size_y + size_y]
+    r_p0 = Dr[0: size_y + size_p, size_y + size_y : size_y + size_y + size_p]
     sol[0].set_B(r_y0)
     sol[N - 1].set_B(r_yM)
     sol[N - 1].set_VN(r_p0)

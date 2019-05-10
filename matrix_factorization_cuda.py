@@ -327,7 +327,7 @@ def lu_solve_vec(A, P, L, U, b, c, y, x, eps):
         c[i] = 0
         for j in range(m_A):
             c[i] += P[i, j] * b[j]
-    forward_solve_vec(L, b, y, eps)
+    forward_solve_vec(L, c, y, eps)
     backward_solve_vec(U, y, x, eps)
     return
 
@@ -353,6 +353,6 @@ def lu_solve_mat(A, P, L, U, b, c, y, x, eps):
             c[i, j] = 0
             for k in range(n_b):
                 c[i, j] += P[i, k] * b[k, j]
-    forward_solve_mat(L, b, y, eps)
+    forward_solve_mat(L, c, y, eps)
     backward_solve_mat(U, y, x, eps)
     return
