@@ -1,4 +1,6 @@
 import numpy as np
+import scipy.linalg
+
 
 class collocation_node:
     """
@@ -316,10 +318,33 @@ class collocation_node:
                 '''
 
     def update_Jacobian(self):
-        W_inv = np.linalg.inv(self.W)
-        identity = np.eye(self.size_y, dtype = np.float64)
-        D_W_inv = np.dot(self.D, W_inv)
-        self.A = -identity + np.dot(D_W_inv, self.J)
-        self.C = np.eye(self.size_y)
-        self.H = np.dot(D_W_inv, self.V)
-        self.b = -self.f_b - np.dot(D_W_inv, self.f_a)
+        # W_inv = np.linalg.inv(self.W)
+        # identity = np.eye(self.size_y, dtype = np.float64)
+        # D_W_inv = np.dot(self.D, W_inv)
+        # self.A = -identity + np.dot(D_W_inv, self.J)
+        # self.C = np.eye(self.size_y)
+        # self.H = np.dot(D_W_inv, self.V)
+        # self.b = -self.f_b - np.dot(D_W_inv, self.f_a)
+        identity = np.eye(self.size_y, dtype=np.float64)
+        # P * W = L * U
+        P, L, U = scipy.linalg.lu(self.W)
+        # A = -I + D * W^(-1) * J
+        # X = np.dot(P, self.J)
+        P_inv_J = np.linalg.solve(P, self.J)
+        L_inv_J = np.linalg.solve(L, P_inv_J)
+        W_inv_J = np.linalg.solve(U, L_inv_J)
+        D_W_inv_J = np.dot(self.D, W_inv_J)
+        self.A = -identity + D_W_inv_J
+        # H = D * W^(-1) * V
+        P_inv_V = np.linalg.solve(P, self.V)
+        L_inv_V = np.linalg.solve(L, P_inv_V)
+        W_inv_V = np.linalg.solve(U, L_inv_V)
+        self.H = np.dot(self.D, W_inv_V)
+        # C = I
+        self.C = identity
+        # b = -f_b - D * W^(-1) * f_a
+        P_inv_f_a = np.linalg.solve(P, self.f_a)
+        L_inv_f_a = np.linalg.solve(L, P_inv_f_a)
+        W_inv_f_a = np.linalg.solve(U, L_inv_f_a)
+        D_W_inv_f_a = np.dot(self.D, W_inv_f_a)
+        self.b = -self.f_b - D_W_inv_f_a
