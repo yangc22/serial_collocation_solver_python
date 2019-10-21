@@ -187,7 +187,7 @@ class OCP(object):
         abvp_f += fg_vars
         for i in range(len(f)):
             abvp_f += '\t\t_f[{0}] = {1}\n'.format(i, ccode(f[i]))
-        abvp_f += '\n'
+        # abvp_f += '\n'
 
         # g(y,z,p)
         abvp_g = '\tdef _abvp_g(self, _y, _z, _p, _alpha, _g):\n'
@@ -196,7 +196,7 @@ class OCP(object):
         abvp_g += fg_vars
         for i in range(len(g)):
             abvp_g += '\t\t_g[{0}] = {1}\n'.format(i, ccode(g[i]))
-        abvp_g += '\n'
+        # abvp_g += '\n'
         
         # r(y0, y1, p)
         ri_vars = ''
@@ -220,7 +220,7 @@ class OCP(object):
         abvp_r += rf_vars
         for i in range(len(rf)):
             abvp_r += '\t\t_r[{0}] = {1}\n'.format(i+nri, ccode(rf[i]))
-        abvp_r += '\n'
+        # abvp_r += '\n'
         
         # df(y, z, p)
         abvp_Df = '\tdef _abvp_Df(self, _y, _z, _p, _Df):\n'
@@ -243,7 +243,7 @@ class OCP(object):
                 df = diff(f[i], p[j])
                 if df != 0:
                     abvp_Df += '\t\t_Df[{0}][{1}] = {2}\n'.format(i, ny+nz+j, ccode(df))
-        abvp_Df += '\n'
+        # abvp_Df += '\n'
         
         # dg(y, z, p)
         abvp_Dg = '\tdef _abvp_Dg(self, _y, _z, _p, _alpha, _Dg):\n'
@@ -263,7 +263,7 @@ class OCP(object):
                 df = diff(g[i], p[j])
                 if df != 0:
                     abvp_Dg += '\t\t_Dg[{0}][{1}] = {2}\n'.format(i, ny+nz+j, ccode(df))
-        abvp_Dg += '\n'
+        # abvp_Dg += '\n'
         
         # dr(y0, y1, p)
         abvp_Dr = '\tdef _abvp_Dr(self, _y0, _y1, _p, _Dr):\n'
@@ -292,7 +292,7 @@ class OCP(object):
                 dr = diff(rf[i], p[j])
                 if dr != 0:
                     abvp_Dr += '\t\t_Dr[{0}][{1}] = {2}\n'.format(i+nri, 2*ny+j, ccode(dr))
-        abvp_Dr += '\n'
+        # abvp_Dr += '\n'
         
         # main()
         abvp_main = '\tdef __init__(self):\n'
@@ -300,6 +300,7 @@ class OCP(object):
         abvp_main += '\t\tself.size_z = {0}\n'.format(len(z))
         abvp_main += '\t\tself.size_p = {0}\n'.format(len(p))
         abvp_main += '\t\tself.size_inequality = {0}\n'.format(n_ineq)
+        abvp_main += '\t\tself.output_file = \'{0}\'\n'.format(o.output_file)
         '''
         abvp_main += '\tABVPDAE _bvp = ABVPDAENew(_ny, _nz, _np, _ninequality);\n'
         abvp_main += '\t_bvp->f = _abvp_f;\n'
@@ -334,23 +335,44 @@ class OCP(object):
             if o.state_estimate or o.control_estimate or o.parameter_estimate:
                 abvp_main += '\t\tself._solution_estimate(_T0, _Y0, _Z0, _P0);\n'
             '''
-            abvp_main += '\t\terror, t0, y0, z0, p0 = BVPDAEReadData("{0}")\n'.format(o.input_file)
-            abvp_main += '\t\tif (error != 0):\n'
+            abvp_main += '\t\terror, t0, y0, z0, p0 = bvpdae_read_data("{0}")\n'.format(o.input_file)
+            # if read file fails
+            abvp_main += '\t\tif error != 0:\n'
             abvp_main += '\t\t\tprint("Unable to read input file!")\n'
-            abvp_main += '\t\tself.N = t0.shape[0]\n'
-            abvp_main += '\t\tself.T0 = t0\n'
-            abvp_main += '\t\tself.Y0 = None\n'
-            abvp_main += '\t\tif (self.size_y > 0):\n'
+            abvp_main += '\t\t\tself.N = {0}\n'.format(o.nodes)
+            abvp_main += '\t\t\tself.t_initial = {0}\n'.format(o.t_i)
+            abvp_main += '\t\t\tself.t_final = {0}\n'.format(o.t_f)
+            abvp_main += '\t\t\tself.T0 = np.linspace(self.t_initial, self.t_final, self.N)\n'
             abvp_main += '\t\t\tself.Y0 = np.ones((self.N, self.size_y), dtype = np.float64)\n'
-            abvp_main += '\t\tself.Z0 = None\n'
-            abvp_main += '\t\tif (self.size_z > 0):\n'
-            abvp_main += '\t\t\tself.P0 = np.ones((self.N, self.size_z), dtype = np.float64)\n'
-            abvp_main += '\t\tself.P0 = None\n'
-            abvp_main += '\t\tif (self.size_p > 0):\n'
-            abvp_main += '\t\t\tself.P0 = np.ones((self.size_p), dtype = np.float64)\n'
-            abvp_main += '\t\t_pack_YZP(self.Y0, self.Z0, self.P0, y0, z0, p0);\n'
+            abvp_main += '\t\t\tself.Z0 = np.ones((self.N, self.size_z), dtype = np.float64)\n'
+            if np > 0:
+                abvp_main += '\t\t\tself.P0 = np.ones((self.size_p), dtype = np.float64)\n'
+            else:
+                abvp_main += '\t\t\tself.P0 = np.ones((0), dtype = np.float64)\n'
+            '''
+            abvp_main += '\tMatrixSetAllTo(_Y0, 1.0)\n'
+            abvp_main += '\tMatrixSetAllTo(_Z0, 1.0)\n'
+            if np > 0:
+                abvp_main += '\tVectorSetAllTo(_P0, 1.0)\n'
+            '''
             if o.state_estimate or o.control_estimate or o.parameter_estimate:
-                abvp_main += '\t\tself._solution_estimate(_T0, _Y0, _Z0, _P0);\n'
+                abvp_main += '\t\t\tself._solution_estimate(self.T0, self.Y0, self.Z0, self.P0)\n'
+            abvp_main += '\t\tif error == 0:\n'
+            abvp_main += '\t\t\tprint("Read input file!")\n'
+            abvp_main += '\t\t\tself.N = t0.shape[0]\n'
+            abvp_main += '\t\t\tself.T0 = t0\n'
+            abvp_main += '\t\t\tself.Y0 = None\n'
+            abvp_main += '\t\t\tif self.size_y > 0:\n'
+            abvp_main += '\t\t\t\tself.Y0 = np.ones((self.N, self.size_y), dtype = np.float64)\n'
+            abvp_main += '\t\t\tself.Z0 = None\n'
+            abvp_main += '\t\t\tif self.size_z > 0:\n'
+            abvp_main += '\t\t\t\tself.Z0 = np.ones((self.N, self.size_z), dtype = np.float64)\n'
+            abvp_main += '\t\t\tself.P0 = None\n'
+            abvp_main += '\t\t\tif self.size_p > 0:\n'
+            abvp_main += '\t\t\t\tself.P0 = np.ones(self.size_p, dtype = np.float64)\n'
+            abvp_main += '\t\t\tself._pack_YZP(self.Y0, self.Z0, self.P0, y0, z0, p0)\n'
+            if o.state_estimate or o.control_estimate or o.parameter_estimate:
+                abvp_main += '\t\t\tself._solution_estimate(self.T0, self.Y0, self.Z0, self.P0)\n'
         else:
             abvp_main += '\t\tself.N = {0}\n'.format(o.nodes)
             abvp_main += '\t\tself.t_initial = {0}\n'.format(o.t_i)
@@ -359,7 +381,7 @@ class OCP(object):
             abvp_main += '\t\tself.Y0 = np.ones((self.N, self.size_y), dtype = np.float64)\n'
             abvp_main += '\t\tself.Z0 = np.ones((self.N, self.size_z), dtype = np.float64)\n'
             if np > 0:
-                abvp_main += '\t\tself.P0 = np.ones((self.size_p), dtype = np.float64)\n'
+                abvp_main += '\t\tself.P0 = np.ones(self.size_p, dtype = np.float64)\n'
             else:
                 abvp_main += '\t\tself.P0 = np.ones((0), dtype = np.float64)\n'
             '''
@@ -375,14 +397,14 @@ class OCP(object):
         if o.input_file != "":
             abvp_main += '\n'
             abvp_main += '\tdef _pack_YZP(self, _Y, _Z, _P, y0, z0, p0):\n'
-            abvp_main += '\t\tif (_Y != None) and (y0 != None):\n'
+            abvp_main += '\t\tif _Y is not None and y0 is not None:\n'
             # abvp_main += '\t\t\t_n = y0.shape[0] if y0.shape[0] < _Y.shape[0] else _Y.shape[0]\n'
             abvp_main += '\t\t\t_n = self.N\n'
             abvp_main += '\t\t\t_m = y0.shape[1] if y0.shape[1] < _Y.shape[1] else _Y.shape[1]\n'
             abvp_main += '\t\t\tfor i in range(_n):\n'
             abvp_main += '\t\t\t\tfor j in range(_m):\n'
             abvp_main += '\t\t\t\t\t_Y[i][j] = y0[i][j]\n'
-            abvp_main += '\t\tif (_Z != None) and (z0 != None):\n'
+            abvp_main += '\t\tif _Z is not None and z0 is not None:\n'
             # abvp_main += '\t\t\t_n = z0.shape[0] if z0.shape[0] < _Z.shape[0] else _Z.shape[0]\n'
             abvp_main += '\t\t\t_n = self.N\n'
             abvp_main += '\t\t\t# only read in enough dtat to fill the controls\n'
@@ -390,7 +412,7 @@ class OCP(object):
             abvp_main += '\t\t\tfor i in range(_n):\n'
             abvp_main += '\t\t\t\tfor j in range(_m):\n'
             abvp_main += '\t\t\t\t\t_Z[i][j] = z0[i][j]\n'
-            abvp_main += '\t\tif (_P != None) and (p0 != None):\n'
+            abvp_main += '\t\tif _P is not None and p0 is not None:\n'
             abvp_main += '\t\t\t_n = p0.shape[0] if p0.shape[0] < _P.shape[0] else _P.shape[0]\n'
             abvp_main += '\t\t\tfor i in range(_n):\n'
             abvp_main += '\t\t\t\t_P[i] = p0[i]\n'
@@ -402,21 +424,21 @@ class OCP(object):
             # abvp_header += '\tdouble t;\n'
             abvp_main += '\t\tN = _T.shape[0]\n'
             abvp_main += '\t\tfor i in range(N):\n'
-            abvp_main += '\t\t\tt = _T[i];\n'
+            abvp_main += '\t\t\tt = _T[i]\n'
             if o.state_estimate:
                 for j in range(len(o.state_estimate)):
-                    abvp_main += '\t\t\t_Y[i][{0}] = {1};\n'.format(j, o.state_estimate[j])
+                    abvp_main += '\t\t\t_Y[i][{0}] = {1}\n'.format(j, o.state_estimate[j])
             if o.control_estimate:
                 for j in range(len(o.control_estimate)):
                     #abvp_header += '\t\t_Z->e[i][{0}] = {1};\n'.format(j, ccode(o.control_estimate[j]))
-                    abvp_main += '\t\t\t_Z[i][{0}] = {1};\n'.format(j, o.control_estimate[j])
+                    abvp_main += '\t\t\t_Z[i][{0}] = {1}\n'.format(j, o.control_estimate[j])
             #abvp_header += '\t\t}\n'
             abvp_main += '\n'
-            abvp_main += '\t\tif (_P.shape[0] != 0):\n'
+            abvp_main += '\t\tif _P.shape[0] != 0:\n'
             abvp_main += '\t\t\tfor i in range(self.size_p):\n'
             if o.parameter_estimate:
                 for j in range(len(o.parameter_estimate)):
-                    abvp_main += '\t\t\t\t_P[{0}] = {1};\n'.format(j, o.parameter_estimate[j])
+                    abvp_main += '\t\t\t\t_P[{0}] = {1}\n'.format(j, o.parameter_estimate[j])
             else:
                 abvp_main += '\t\t\t\t_P0 = np.ones((self.size_p), dtype = np.float64)\n'
         
@@ -433,9 +455,9 @@ class OCP(object):
         # header, import necessary packages and class header
         abvp_header = '# Created by OCP.py\n'
         abvp_header += 'from math import *\n'
-        abvp_header += 'from BVPDAEReadWriteData import BVPDAEReadData, BVPDAEWriteData\n'
-        abvp_header += 'import numpy as np\n\n'
-        abvp_header += 'class bvp_dae:\n'
+        abvp_header += 'from BVPDAEReadWriteData import bvpdae_read_data, bvpdae_write_data\n'
+        abvp_header += 'import numpy as np\n\n\n'
+        abvp_header += 'class BvpDae:\n'
 
         '''
         abvp_header += '#include <stdio.h>\n'
@@ -700,7 +722,7 @@ def _ocp_translate(inpt, typ):
     print('raw lines done!')
     '''
     exec(t)
-    print ('\'\'\'\n')
+    print ('\n\'\'\'\n')
     print (_raw_lines_)
     print ('\'\'\'\n')
 

@@ -1,6 +1,7 @@
 from collocation_coefficients import *
 from collocation_node import *
 from gauss_coefficients import *
+from BVPDAEReadWriteData import bvpdae_write_data
 import numpy as np
 import bvp_problem
 import math
@@ -29,6 +30,7 @@ def collocation_solver(bvp_dae):
     size_z = bvp_dae.size_z
     size_p = bvp_dae.size_p
     size_inequality = bvp_dae.size_inequality
+    output_file = bvp_dae.output_file
     N = bvp_dae.N  # number of time nodes
     t_span_init = bvp_dae.T0
     y_init = bvp_dae.Y0
@@ -135,6 +137,10 @@ def collocation_solver(bvp_dae):
     end_time = time.time()
     y0, z0, p0 = recover_solution(size_y, size_z, size_p, m, N, rk, t_span0, q0)
     print("Elapsed time: ", end_time - start_time)
+    # write the output
+    error = bvpdae_write_data(output_file, N, size_y, size_z, size_p, t_span0, y0, z0, p0)
+    if error != 0:
+        print('Write file failed.')
     plot_result(size_y, size_z, t_span0, y0, z0)
 
 
@@ -819,7 +825,7 @@ def remesh(size_y, size_z, N, tspan, y0, z0, residual):
 
 
 if __name__ == '__main__':
-    bvp_dae = bvp_problem.bvp_dae()
+    bvp_dae = bvp_problem.BvpDae()
     collocation_solver(bvp_dae)
 
     '''

@@ -1,15 +1,17 @@
 # Created by OCP.py
 from math import *
+from BVPDAEReadWriteData import bvpdae_read_data, bvpdae_write_data
 import numpy as np
 
 
-class bvp_dae:
+class BvpDae:
 
 	def __init__(self):
 		self.size_y = 4
 		self.size_z = 5
 		self.size_p = 4
 		self.size_inequality = 2
+		self.output_file = 'ex8.data'
 		self.tolerance = 1e-06
 		self.maximum_nodes = 2000
 		self.maximum_newton_iterations = 200
@@ -20,18 +22,18 @@ class bvp_dae:
 		self.T0 = np.linspace(self.t_initial, self.t_final, self.N)
 		self.Y0 = np.ones((self.N, self.size_y), dtype = np.float64)
 		self.Z0 = np.ones((self.N, self.size_z), dtype = np.float64)
-		self.P0 = np.ones((self.size_p), dtype = np.float64)
+		self.P0 = np.ones(self.size_p, dtype = np.float64)
 		self._solution_estimate(self.T0, self.Y0, self.Z0, self.P0)
 
 	def _solution_estimate(self, _T, _Y, _Z, _P):
 		N = _T.shape[0]
 		for i in range(N):
-			t = _T[i];
-			_Y[i][0] = -0.0641025641025641*t + 0.05;
-			_Y[i][1] = 0;
-			_Z[i][0] = 0.01;
+			t = _T[i]
+			_Y[i][0] = -0.0641025641025641*t + 0.05
+			_Y[i][1] = 0
+			_Z[i][0] = 0.01
 
-		if (_P.shape[0] != 0):
+		if _P.shape[0] != 0:
 			for i in range(self.size_p):
 				_P0 = np.ones((self.size_p), dtype = np.float64)
 
@@ -50,7 +52,6 @@ class bvp_dae:
 		_f[2] = -_lambda1*(-u + (x2 + 0.5)*(-25.0*x1/pow(x1 + 2.0, 2) + 25.0/(x1 + 2.0))*exp(25.0*x1/(x1 + 2.0)) - 2.0) + _lambda2*(x2 + 0.5)*(-25.0*x1/pow(x1 + 2.0, 2) + 25.0/(x1 + 2.0))*exp(25.0*x1/(x1 + 2.0)) - 1.0*x1
 		_f[3] = -_lambda1*exp(25.0*x1/(x1 + 2.0)) - _lambda2*(-exp(25.0*x1/(x1 + 2.0)) - 1) - 1.0*x2
 
-
 	def _abvp_g(self, _y, _z, _p, _alpha, _g):
 		x1 = _y[0]
 		x2 = _y[1]
@@ -66,7 +67,6 @@ class bvp_dae:
 		_g[2] = _nu2 - u - 1.0
 		_g[3] = _mu1 + _nu1 - sqrt(2*_alpha + pow(_mu1, 2) + pow(_nu1, 2))
 		_g[4] = _mu2 + _nu2 - sqrt(2*_alpha + pow(_mu2, 2) + pow(_nu2, 2))
-
 
 	def _abvp_r(self, _y0, _y1, _p, _r):
 		_kappa_i1 = _p[0]
@@ -91,7 +91,6 @@ class bvp_dae:
 		_r[5] = x2
 		_r[6] = -_kappa_f1 + _lambda1
 		_r[7] = -_kappa_f2 + _lambda2
-
 
 	def _abvp_Df(self, _y, _z, _p, _Df):
 		x1 = _y[0]
@@ -118,7 +117,6 @@ class bvp_dae:
 		_Df[3][2] = -exp(25.0*x1/(x1 + 2.0))
 		_Df[3][3] = exp(25.0*x1/(x1 + 2.0)) + 1
 
-
 	def _abvp_Dg(self, _y, _z, _p, _alpha, _Dg):
 		x1 = _y[0]
 		x2 = _y[1]
@@ -142,7 +140,6 @@ class bvp_dae:
 		_Dg[3][7] = -_nu1/sqrt(2*_alpha + pow(_mu1, 2) + pow(_nu1, 2)) + 1
 		_Dg[4][6] = -_mu2/sqrt(2*_alpha + pow(_mu2, 2) + pow(_nu2, 2)) + 1
 		_Dg[4][8] = -_nu2/sqrt(2*_alpha + pow(_mu2, 2) + pow(_nu2, 2)) + 1
-
 
 	def _abvp_Dr(self, _y0, _y1, _p, _Dr):
 		_kappa_i1 = _p[0]
